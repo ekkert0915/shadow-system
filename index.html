@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Shadow System</title>
+
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#070712">
+
+<style>
+body{
+margin:0;
+font-family:system-ui;
+background:#070712;
+color:white;
+padding:20px;
+}
+.card{
+background:#12122a;
+padding:15px;
+border-radius:12px;
+margin-bottom:15px;
+}
+button{
+padding:10px;
+margin:5px;
+border:none;
+border-radius:8px;
+cursor:pointer;
+font-weight:bold;
+}
+.btn-full{background:#7c5cff;}
+.btn-min{background:#00ff9a;color:black;}
+.btn-cond{background:#ff5bd6;}
+</style>
+</head>
+
+<body>
+
+<h1>🩸 SHADOW SYSTEM</h1>
+
+<div class="card">
+Day: <span id="dayNum">1</span><br>
+Rank: <span id="rank">E</span><br>
+XP: <span id="xp">0</span><br>
+Next Rank: <span id="nextRank"></span><br><br>
+
+<button class="btn-full" onclick="log('FULL')">Full</button>
+<button class="btn-min" onclick="log('MINIMUM')">Minimum</button>
+<button class="btn-cond" onclick="log('CONDITIONING')">Dungeon</button>
+</div>
+
+<script>
+
+const KEY="shadow_unlimited_v1"
+
+const XP_VALUES={
+FULL:100,
+MINIMUM:40,
+CONDITIONING:120
+}
+
+const RANKS=[
+{name:"E",min:0},
+{name:"D",min:500},
+{name:"C",min:1500},
+{name:"B",min:3000},
+{name:"A",min:6000},
+{name:"S",min:10000},
+{name:"SS",min:15000},
+{name:"SSS",min:22000}
+]
+
+let state=JSON.parse(localStorage.getItem(KEY))||{
+start:new Date().toISOString().slice(0,10),
+xp:0
+}
+
+function save(){
+localStorage.setItem(KEY,JSON.stringify(state))
+}
+
+function getDay(){
+let start=new Date(state.start)
+let today=new Date()
+let diff=Math.floor((today-start)/(1000*60*60*24))
+return diff+1
+}
+
+function getRank(){
+let current=RANKS[0]
+let next=null
+for(let i=0;i<RANKS.length;i++){
+if(state.xp>=RANKS[i].min){
+current=RANKS[i]
+next=RANKS[i+1]||null
+}
+}
+return{current,next}
+}
+
+function log(type){
+state.xp+=XP_VALUES[type]||0
+save()
+render()
+}
+
+function render(){
+document.getElementById("dayNum").innerText=getDay()
+document.getElementById("xp").innerText=state.xp
+
+let info=getRank()
+document.getElementById("rank").innerText=info.current.name
+
+if(info.next){
+document.getElementById("nextRank").innerText=
+info.next.name+" in "+(info.next.min-state.xp)+" XP"
+}else{
+document.getElementById("nextRank").innerText="MAX RANK"
+}
+}
+
+render()
+
+if("serviceWorker" in navigator){
+navigator.serviceWorker.register("service-worker.js")
+}
+
+</script>
+</body>
+</html>
