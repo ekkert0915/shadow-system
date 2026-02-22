@@ -1,132 +1,713 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Shadow System</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Shadow System</title>
 
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#070712">
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#070712">
 
-<style>
-body{
-margin:0;
-font-family:system-ui;
-background:#070712;
-color:white;
-padding:20px;
-}
-.card{
-background:#12122a;
-padding:15px;
-border-radius:12px;
-margin-bottom:15px;
-}
-button{
-padding:10px;
-margin:5px;
-border:none;
-border-radius:8px;
-cursor:pointer;
-font-weight:bold;
-}
-.btn-full{background:#7c5cff;}
-.btn-min{background:#00ff9a;color:black;}
-.btn-cond{background:#ff5bd6;}
-</style>
+  <style>
+    :root{
+      --bg:#070712;
+      --text:#e9e9ff;
+      --muted:#a7a7d9;
+      --line:rgba(255,255,255,.10);
+      --purple:#7c5cff;
+      --green:#00ff9a;
+      --blue:#4aa3ff;
+      --pink:#ff5bd6;
+      --glow: 0 0 18px rgba(124,92,255,.22), 0 0 26px rgba(0,255,154,.10);
+      --shadow: 0 18px 55px rgba(0,0,0,.65);
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:
+        radial-gradient(900px 600px at 20% 10%, rgba(124,92,255,.18), transparent 60%),
+        radial-gradient(850px 650px at 85% 15%, rgba(74,163,255,.16), transparent 60%),
+        radial-gradient(900px 700px at 55% 95%, rgba(0,255,154,.10), transparent 55%),
+        linear-gradient(180deg, #05050d, var(--bg));
+      color:var(--text);
+      min-height:100vh;
+      padding:18px;
+    }
+    .wrap{ width:min(900px, 100%); margin:0 auto; display:grid; gap:12px; }
+
+    .header{
+      background: rgba(15,16,32,.75);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow: var(--shadow);
+      padding:14px;
+      display:flex;
+      justify-content:space-between;
+      gap:12px;
+      flex-wrap:wrap;
+      position:relative;
+      overflow:hidden;
+    }
+    .header::after{
+      content:"";
+      position:absolute; inset:-40px;
+      background: radial-gradient(circle at 30% 30%, rgba(124,92,255,.18), transparent 45%),
+                  radial-gradient(circle at 80% 25%, rgba(74,163,255,.16), transparent 55%);
+      opacity:.9;
+      pointer-events:none;
+    }
+    .title{ position:relative; z-index:1; }
+    .title h1{ margin:0; letter-spacing:1px; text-transform:uppercase; font-size:20px; }
+    .sub{ margin-top:6px; color:var(--muted); font-size:12px; }
+
+    .badges{ position:relative; z-index:1; display:flex; gap:10px; flex-wrap:wrap; margin-left:auto; }
+    .badge{
+      background: rgba(20,22,51,.75);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:10px 12px;
+      min-width:170px;
+      box-shadow: var(--glow);
+      text-align:right;
+    }
+    .badge .k{ font-size:11px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
+    .badge .v{ margin-top:3px; font-size:16px; font-weight:800; }
+
+    .card{
+      background: rgba(15,16,32,.78);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow: var(--shadow);
+      padding:14px;
+    }
+    .card h2{
+      margin:0 0 10px 0;
+      font-size:13px;
+      letter-spacing:1px;
+      text-transform:uppercase;
+      color:var(--muted);
+    }
+
+    .small{ font-size:12px; color: var(--muted); line-height:1.4; }
+    .ok{ color:#c8ffd8; }
+    .warn{ color:#ffe6a6; }
+
+    .btns{ display:flex; gap:10px; flex-wrap:wrap; }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:10px; }
+
+    button{
+      font: inherit; border:none; cursor:pointer;
+      padding:12px 12px; border-radius:14px;
+      font-weight:800; letter-spacing:.6px; text-transform:uppercase;
+      transition: transform .08s ease;
+      box-shadow: 0 10px 28px rgba(0,0,0,.35);
+    }
+    button:active{ transform: translateY(1px) scale(.99); }
+
+    .btn-full{ background: linear-gradient(90deg, var(--purple), var(--blue)); color:#070712; }
+    .btn-min{ background: linear-gradient(90deg, var(--green), #8effc8); color:#071015; }
+    .btn-cond{ background: linear-gradient(90deg, var(--pink), var(--purple)); color:#0a0712; }
+    .btn-undo{ background: rgba(255,255,255,.06); border:1px solid var(--line); color:var(--text); box-shadow:none; }
+    .btn-reset{ background: rgba(255,59,92,.12); border:1px solid rgba(255,59,92,.35); color: var(--text); box-shadow:none; }
+
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(4, minmax(140px, 1fr));
+      gap:10px;
+    }
+    @media (max-width: 720px){ .grid{ grid-template-columns: repeat(2, minmax(140px, 1fr)); } }
+
+    label{ font-size:12px; color:var(--muted); }
+    input, textarea{
+      width:100%; padding:10px;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.22);
+      color:var(--text);
+      outline:none;
+    }
+    textarea{ resize:vertical; }
+
+    canvas{
+      width:100%; height:180px;
+      background: rgba(0,0,0,.18);
+      border:1px solid var(--line);
+      border-radius:14px;
+    }
+
+    .log{
+      margin:0; padding:0; list-style:none;
+      display:flex; flex-direction:column; gap:8px;
+      max-height:260px; overflow:auto;
+    }
+    .log li{
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.18);
+      border-radius:14px;
+      padding:10px;
+      display:flex; justify-content:space-between; gap:10px; align-items:center;
+      font-size:13px;
+    }
+    .tag{
+      font-size:11px;
+      padding:5px 8px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      white-space:nowrap;
+      box-shadow: 0 0 14px rgba(124,92,255,.12);
+    }
+
+    .workoutBox{
+      white-space: pre-wrap;
+      background: rgba(0,0,0,.18);
+      border:1px solid var(--line);
+      border-radius:14px;
+      padding:12px;
+      margin:10px 0 12px 0;
+    }
+
+    .dayGrid{
+      display:grid; gap:10px;
+      grid-template-columns: repeat(2, minmax(240px, 1fr));
+    }
+    @media (max-width: 720px){ .dayGrid{ grid-template-columns: 1fr; } }
+
+    .dayCard{
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.14);
+      border-radius:14px;
+      padding:10px;
+    }
+    .dayTitle{
+      font-weight:800; margin-bottom:6px;
+      text-transform:uppercase; letter-spacing:.6px;
+    }
+
+    .hidden{ display:none; }
+
+    .toast{
+      position:fixed; left:50%; bottom:16px;
+      transform:translateX(-50%);
+      background: rgba(20,22,51,.92);
+      border:1px solid var(--line);
+      padding:10px 12px;
+      border-radius:14px;
+      box-shadow: var(--glow);
+      font-size:13px;
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .18s ease, transform .18s ease;
+    }
+    .toast.show{ opacity:1; transform:translateX(-50%) translateY(-4px); }
+  </style>
 </head>
 
 <body>
+  <div class="wrap">
+    <header class="header">
+      <div class="title">
+        <h1>🩸 SHADOW SYSTEM</h1>
+        <div class="sub">Unlimited days • Sunday start • Workouts editable • Ranks to SSS</div>
+      </div>
 
-<h1>🩸 SHADOW SYSTEM</h1>
+      <div class="badges">
+        <div class="badge">
+          <div class="k">Day</div>
+          <div class="v"><span id="dayNum">1</span></div>
+        </div>
+        <div class="badge">
+          <div class="k">Streak</div>
+          <div class="v"><span id="streak">0</span> 🔥</div>
+        </div>
+        <div class="badge">
+          <div class="k">Rank</div>
+          <div class="v"><span id="rank">E</span> • <span id="xp">0</span> XP</div>
+          <div class="k" style="margin-top:6px"><span id="nextRankLine">Next: D in 500 XP</span></div>
+        </div>
+      </div>
+    </header>
 
-<div class="card">
-Day: <span id="dayNum">1</span><br>
-Rank: <span id="rank">E</span><br>
-XP: <span id="xp">0</span><br>
-Next Rank: <span id="nextRank"></span><br><br>
+    <section class="card">
+      <h2>Today’s Workout</h2>
+      <div class="small" id="todayWorkoutName"></div>
+      <pre class="workoutBox" id="todayWorkoutText"></pre>
+      <div class="small" id="todayStatus">Not logged today.</div>
 
-<button class="btn-full" onclick="log('FULL')">Full</button>
-<button class="btn-min" onclick="log('MINIMUM')">Minimum</button>
-<button class="btn-cond" onclick="log('CONDITIONING')">Dungeon</button>
-</div>
+      <div class="btns">
+        <button class="btn-full" onclick="logWorkout('FULL')">Full</button>
+        <button class="btn-min"  onclick="logWorkout('MINIMUM')">Minimum</button>
+        <button class="btn-cond" onclick="logWorkout('CONDITIONING')">Dungeon</button>
+      </div>
+
+      <div class="row">
+        <button class="btn-undo" onclick="undoToday()">Undo Today</button>
+        <button class="btn-undo" onclick="togglePanel('customPanel')">Customize Workouts</button>
+        <button class="btn-reset" onclick="resetAll()">Reset</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Stats (Today)</h2>
+      <div class="grid">
+        <div><label>Max Push-ups</label><input id="inPush" type="number" min="0" placeholder="0"></div>
+        <div><label>Max Squats</label><input id="inSquat" type="number" min="0" placeholder="?"></div>
+        <div><label>Max Rows</label><input id="inRow" type="number" min="0" placeholder="?"></div>
+        <div><label>Bodyweight (lb)</label><input id="inWeight" type="number" min="0" step="0.1" placeholder="220"></div>
+      </div>
+      <div class="row">
+        <button class="btn-undo" onclick="saveStatsOnly()">Save Stats</button>
+        <div class="small">Stats save even without a workout log.</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Graphs</h2>
+      <div class="small">Strength = Push + Squat + Row (last 30)</div>
+      <canvas id="strengthChart" width="900" height="360"></canvas>
+      <div style="height:10px"></div>
+      <div class="small">Bodyweight (lb) (last 30)</div>
+      <canvas id="weightChart" width="900" height="360"></canvas>
+    </section>
+
+    <section class="card">
+      <h2>Mission Log</h2>
+      <ul class="log" id="log"></ul>
+    </section>
+
+    <section class="card hidden" id="customPanel">
+      <h2>Customize Your Week (Sunday Start)</h2>
+      <div class="small">Edit each day’s workout. Save. Today updates instantly.</div>
+
+      <div class="dayGrid">
+        <div class="dayCard"><div class="dayTitle">Sunday</div><textarea id="w0" rows="8"></textarea></div>
+        <div class="dayCard"><div class="dayTitle">Monday</div><textarea id="w1" rows="8"></textarea></div>
+        <div class="dayCard"><div class="dayTitle">Tuesday</div><textarea id="w2" rows="8"></textarea></div>
+        <div class="dayCard"><div class="dayTitle">Wednesday</div><textarea id="w3" rows="8"></textarea></div>
+        <div class="dayCard"><div class="dayTitle">Thursday</div><textarea id="w4" rows="8"></textarea></div>
+        <div class="dayCard"><div class="dayTitle">Friday</div><textarea id="w5" rows="8"></textarea></div>
+        <div class="dayCard"><div class="dayTitle">Saturday</div><textarea id="w6" rows="8"></textarea></div>
+      </div>
+
+      <div class="row">
+        <button class="btn-full" onclick="saveWorkouts()">Save Workouts</button>
+        <button class="btn-undo" onclick="restoreWorkoutDefaults()">Restore Defaults</button>
+      </div>
+
+      <div class="small" style="margin-top:8px">
+        Want more ranks? Edit the <b>RANKS</b> array in the script.
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast">Saved.</div>
 
 <script>
+/* ========= Storage keys ========= */
+const KEY_STATE = "shadow_full_unlimited_state_v1";
+const KEY_WORK  = "shadow_full_unlimited_workouts_v1";
 
-const KEY="shadow_unlimited_v1"
+/* ========= XP values ========= */
+const XP = { FULL: 100, MINIMUM: 40, CONDITIONING: 120 };
 
-const XP_VALUES={
-FULL:100,
-MINIMUM:40,
-CONDITIONING:120
+/* ========= Rank ladder (edit anytime) ========= */
+const RANKS = [
+  { name: "E",   minXP: 0 },
+  { name: "D",   minXP: 500 },
+  { name: "C",   minXP: 1500 },
+  { name: "B",   minXP: 3000 },
+  { name: "A",   minXP: 6000 },
+  { name: "S",   minXP: 10000 },
+  { name: "SS",  minXP: 15000 },
+  { name: "SSS", minXP: 22000 }
+];
+
+/* ========= Default workouts (Sunday start) ========= */
+const DEFAULT_WORKOUTS = [
+`SUNDAY — PUSH
+• Incline Push-ups 4×8–12
+• Pike Push-ups 3×6–10
+• Chair Dips 3×8–12
+• DB Shoulder Press 3×10–15`,
+`MONDAY — PULL
+• Pull-up Negatives 4×3–6
+• Backpack Rows 4×10–15
+• DB Curls 3×12–15
+• Dead Hang 2×20–40 sec`,
+`TUESDAY — LEGS
+• Squats 4×15–20
+• Bulgarian Split Squats 3×8–12 each
+• DB RDL 3×12–15
+• Calf Raises 3×15–20`,
+`WEDNESDAY — CONDITIONING + CORE
+• 8 rounds: 20s hard / 40s rest
+• Hanging Knee Raises 3×8–12
+• Plank 2×60 sec
+• Russian Twists 2×20`,
+`THURSDAY — FULL BODY (3–4 rounds)
+• Incline Push-ups 8–12
+• Backpack Rows 12
+• Squats 15
+• Pull-up Negatives 3
+• Plank 45 sec`,
+`FRIDAY — WEAK POINTS
+• Push-up progression (negatives + incline)
+• Extra pull-up negatives
+• Mobility 10 min`,
+`SATURDAY — RECOVERY
+• Walk 20–30 min
+• Stretch 10 min`
+];
+
+/* ========= Load state ========= */
+const state = load(KEY_STATE) ?? { startISO: isoDate(new Date()), xp: 0, logs: [] };
+let workouts = load(KEY_WORK) ?? [...DEFAULT_WORKOUTS];
+
+/* ========= UI refs ========= */
+const UI = {
+  dayNum: document.getElementById("dayNum"),
+  xp: document.getElementById("xp"),
+  rank: document.getElementById("rank"),
+  nextRankLine: document.getElementById("nextRankLine"),
+  streak: document.getElementById("streak"),
+  todayStatus: document.getElementById("todayStatus"),
+  log: document.getElementById("log"),
+  todayWorkoutName: document.getElementById("todayWorkoutName"),
+  todayWorkoutText: document.getElementById("todayWorkoutText"),
+  inPush: document.getElementById("inPush"),
+  inSquat: document.getElementById("inSquat"),
+  inRow: document.getElementById("inRow"),
+  inWeight: document.getElementById("inWeight"),
+  strengthChart: document.getElementById("strengthChart"),
+  weightChart: document.getElementById("weightChart"),
+  toast: document.getElementById("toast")
+};
+
+/* ========= Init ========= */
+hydrateWorkoutEditor();
+render();
+registerSW();
+
+/* ========= Helpers ========= */
+function isoDate(d){
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,"0");
+  const day = String(d.getDate()).padStart(2,"0");
+  return `${y}-${m}-${day}`;
+}
+function parseISO(iso){ return new Date(iso + "T00:00:00"); }
+function daysBetween(aISO, bISO){
+  return Math.round((parseISO(bISO) - parseISO(aISO)) / (1000*60*60*24));
+}
+function dayNumberToday(){
+  const diff = daysBetween(state.startISO, isoDate(new Date()));
+  return Math.max(1, diff + 1); // unlimited
+}
+function hasTodayLog(){
+  const t = isoDate(new Date());
+  return state.logs.some(l => l.iso === t);
+}
+function todayLog(){
+  const t = isoDate(new Date());
+  return state.logs.find(l => l.iso === t) ?? null;
+}
+function computeStreak(){
+  if(state.logs.length === 0) return 0;
+  const days = [...new Set(state.logs.map(l => l.iso))].sort();
+  let s = 1;
+  for(let i = days.length - 1; i > 0; i--){
+    if(daysBetween(days[i-1], days[i]) === 1) s++;
+    else break;
+  }
+  return s;
+}
+function numOrNull(v){
+  if(v === "" || v == null) return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+function readInputs(){
+  return {
+    push: numOrNull(UI.inPush.value),
+    squat: numOrNull(UI.inSquat.value),
+    row: numOrNull(UI.inRow.value),
+    weight: numOrNull(UI.inWeight.value)
+  };
 }
 
-const RANKS=[
-{name:"E",min:0},
-{name:"D",min:500},
-{name:"C",min:1500},
-{name:"B",min:3000},
-{name:"A",min:6000},
-{name:"S",min:10000},
-{name:"SS",min:15000},
-{name:"SSS",min:22000}
-]
-
-let state=JSON.parse(localStorage.getItem(KEY))||{
-start:new Date().toISOString().slice(0,10),
-xp:0
+/* ========= Rank logic ========= */
+function getRankInfo(xp){
+  let current = RANKS[0];
+  for(const r of RANKS){
+    if(xp >= r.minXP) current = r;
+    else break;
+  }
+  const idx = RANKS.findIndex(r => r.name === current.name);
+  const next = (idx >= 0 && idx < RANKS.length - 1) ? RANKS[idx + 1] : null;
+  return { current, next };
 }
 
-function save(){
-localStorage.setItem(KEY,JSON.stringify(state))
+/* ========= Sunday start highlight ========= */
+function todayIndexSundayStart(){ return new Date().getDay(); } // 0=Sun..6=Sat
+function setTodayWorkout(){
+  const idx = todayIndexSundayStart();
+  const names = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  UI.todayWorkoutName.textContent = `Today is ${names[idx]} — highlighted mission`;
+  UI.todayWorkoutText.textContent = workouts[idx] || "No workout set for today.";
 }
 
-function getDay(){
-let start=new Date(state.start)
-let today=new Date()
-let diff=Math.floor((today-start)/(1000*60*60*24))
-return diff+1
-}
+/* ========= Actions ========= */
+window.logWorkout = function(kind){
+  const today = isoDate(new Date());
+  if(hasTodayLog()) return toast("Already logged today. Undo if needed.");
 
-function getRank(){
-let current=RANKS[0]
-let next=null
-for(let i=0;i<RANKS.length;i++){
-if(state.xp>=RANKS[i].min){
-current=RANKS[i]
-next=RANKS[i+1]||null
-}
-}
-return{current,next}
-}
+  const xpGain = XP[kind] ?? 0;
+  const stats = readInputs();
+  state.logs.push({ iso: today, kind, xp: xpGain, ...stats });
+  state.xp += xpGain;
 
-function log(type){
-state.xp+=XP_VALUES[type]||0
-save()
-render()
-}
+  save(KEY_STATE, state);
+  toast(`Mission logged (+${xpGain} XP).`);
+  render();
+};
 
+window.saveStatsOnly = function(){
+  const today = isoDate(new Date());
+  const stats = readInputs();
+  const ex = todayLog();
+
+  if(ex){
+    Object.assign(ex, stats);
+    save(KEY_STATE, state);
+    toast("Updated stats.");
+    return render();
+  }
+
+  state.logs.push({ iso: today, kind: "STATS ONLY", xp: 0, ...stats });
+  save(KEY_STATE, state);
+  toast("Stats saved.");
+  render();
+};
+
+window.undoToday = function(){
+  const today = isoDate(new Date());
+  const idx = state.logs.findIndex(l => l.iso === today);
+  if(idx === -1) return toast("Nothing logged today.");
+
+  const removed = state.logs.splice(idx, 1)[0];
+  state.xp -= (removed.xp || 0);
+  if(state.xp < 0) state.xp = 0;
+
+  save(KEY_STATE, state);
+  toast("Undid today.");
+  render();
+};
+
+window.togglePanel = function(id){
+  document.getElementById(id)?.classList.toggle("hidden");
+};
+
+window.resetAll = function(){
+  if(!confirm("Reset EVERYTHING? This clears logs + workouts.")) return;
+  localStorage.removeItem(KEY_STATE);
+  localStorage.removeItem(KEY_WORK);
+  location.reload();
+};
+
+/* ========= Workout customization ========= */
+function hydrateWorkoutEditor(){
+  for(let i=0;i<7;i++){
+    const ta = document.getElementById("w"+i);
+    if(ta) ta.value = workouts[i] || "";
+  }
+}
+window.saveWorkouts = function(){
+  const updated = [];
+  for(let i=0;i<7;i++){
+    updated.push((document.getElementById("w"+i).value || "").trim());
+  }
+  workouts = updated;
+  save(KEY_WORK, workouts);
+  toast("Workouts saved.");
+  render();
+};
+window.restoreWorkoutDefaults = function(){
+  workouts = [...DEFAULT_WORKOUTS];
+  save(KEY_WORK, workouts);
+  hydrateWorkoutEditor();
+  toast("Defaults restored.");
+  render();
+};
+
+/* ========= Render ========= */
 function render(){
-document.getElementById("dayNum").innerText=getDay()
-document.getElementById("xp").innerText=state.xp
+  UI.dayNum.textContent = dayNumberToday();
 
-let info=getRank()
-document.getElementById("rank").innerText=info.current.name
+  const info = getRankInfo(state.xp);
+  UI.xp.textContent = state.xp;
+  UI.rank.textContent = info.current.name;
 
-if(info.next){
-document.getElementById("nextRank").innerText=
-info.next.name+" in "+(info.next.min-state.xp)+" XP"
-}else{
-document.getElementById("nextRank").innerText="MAX RANK"
+  if(info.next){
+    const remaining = Math.max(0, info.next.minXP - state.xp);
+    UI.nextRankLine.textContent = `Next: ${info.next.name} in ${remaining} XP`;
+  } else {
+    UI.nextRankLine.textContent = `MAX RANK: ${info.current.name}`;
+  }
+
+  UI.streak.textContent = computeStreak();
+
+  const t = todayLog();
+  UI.todayStatus.innerHTML = t
+    ? `<span class="ok">Logged today:</span> ${t.kind} (+${t.xp} XP)`
+    : `<span class="warn">Not logged today.</span> Even minimum counts.`;
+
+  renderLog();
+  renderCharts();
+  setTodayWorkout();
 }
+
+function renderLog(){
+  UI.log.innerHTML = "";
+  const items = [...state.logs].slice(-30).reverse();
+
+  if(items.length === 0){
+    const li = document.createElement("li");
+    li.textContent = "No logs yet. Day 1 begins now.";
+    UI.log.appendChild(li);
+    return;
+  }
+
+  for(const it of items){
+    const li = document.createElement("li");
+    const left = document.createElement("span");
+
+    const stats = [];
+    if(it.push != null) stats.push(`P:${it.push}`);
+    if(it.squat != null) stats.push(`S:${it.squat}`);
+    if(it.row != null) stats.push(`R:${it.row}`);
+    if(it.weight != null) stats.push(`W:${it.weight}`);
+
+    left.textContent = `${pretty(it.iso)} — ${it.kind} ${it.xp ? `(+${it.xp})` : ""} ${stats.length ? " • " + stats.join(" ") : ""}`;
+
+    const tag = document.createElement("span");
+    tag.className = "tag";
+    tag.textContent = it.kind;
+
+    li.appendChild(left);
+    li.appendChild(tag);
+    UI.log.appendChild(li);
+  }
+}
+function pretty(iso){
+  const [y,m,d] = iso.split("-");
+  return `${m}/${d}/${y}`;
 }
 
-render()
+/* ========= Charts ========= */
+function renderCharts(){
+  const strengthPoints = state.logs
+    .filter(l => (l.push != null) || (l.squat != null) || (l.row != null))
+    .slice(-30)
+    .map(l => ({ x: l.iso, y: (l.push||0)+(l.squat||0)+(l.row||0) }));
 
-if("serviceWorker" in navigator){
-navigator.serviceWorker.register("service-worker.js")
+  const weightPoints = state.logs
+    .filter(l => l.weight != null)
+    .slice(-30)
+    .map(l => ({ x: l.iso, y: l.weight }));
+
+  drawLineChart(UI.strengthChart, strengthPoints, "Strength");
+  drawLineChart(UI.weightChart, weightPoints, "Weight (lb)");
 }
 
+function drawLineChart(canvas, points, label){
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0,0,w,h);
+
+  // grid
+  ctx.strokeStyle = "rgba(255,255,255,0.08)";
+  ctx.lineWidth = 1;
+  for(let i=1;i<6;i++){
+    const y = (h*i)/6;
+    ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(w-12, y); ctx.stroke();
+  }
+
+  // axes
+  ctx.strokeStyle = "rgba(255,255,255,0.12)";
+  ctx.beginPath(); ctx.moveTo(40, 12); ctx.lineTo(40, h-30); ctx.lineTo(w-12, h-30); ctx.stroke();
+
+  // title
+  ctx.fillStyle = "rgba(233,233,255,0.9)";
+  ctx.font = "bold 16px system-ui";
+  ctx.fillText(label, 44, 28);
+
+  if(points.length < 2){
+    ctx.fillStyle = "rgba(167,167,217,0.85)";
+    ctx.font = "12px system-ui";
+    ctx.fillText("Add a few entries to see the line.", 44, 54);
+    return;
+  }
+
+  const ys = points.map(p => p.y);
+  let minY = Math.min(...ys);
+  let maxY = Math.max(...ys);
+  if(minY === maxY){ minY -= 1; maxY += 1; }
+
+  const plotX0 = 40, plotX1 = w-12;
+  const plotY0 = 12, plotY1 = h-30;
+
+  const xAt = i => plotX0 + (i/(points.length-1))*(plotX1-plotX0);
+  const yAt = v => {
+    const t = (v - minY) / (maxY - minY);
+    return plotY1 - t*(plotY1-plotY0);
+  };
+
+  // line
+  ctx.strokeStyle = "rgba(124,92,255,0.9)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(xAt(0), yAt(points[0].y));
+  for(let i=1;i<points.length;i++) ctx.lineTo(xAt(i), yAt(points[i].y));
+  ctx.stroke();
+
+  // points
+  ctx.fillStyle = "rgba(0,255,154,0.9)";
+  for(let i=0;i<points.length;i++){
+    const x = xAt(i), y = yAt(points[i].y);
+    ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fill();
+  }
+
+  // min/max labels
+  ctx.fillStyle = "rgba(167,167,217,0.85)";
+  ctx.font = "12px system-ui";
+  ctx.fillText(`min: ${minY.toFixed(1)}`, 44, h-10);
+  ctx.fillText(`max: ${maxY.toFixed(1)}`, 140, h-10);
+}
+
+/* ========= Storage ========= */
+function load(key){
+  const raw = localStorage.getItem(key);
+  if(!raw) return null;
+  try { return JSON.parse(raw); } catch(e){ return null; }
+}
+function save(key, val){
+  localStorage.setItem(key, JSON.stringify(val));
+}
+
+/* ========= Toast ========= */
+function toast(msg){
+  UI.toast.textContent = msg;
+  UI.toast.classList.add("show");
+  clearTimeout(window.__toastT);
+  window.__toastT = setTimeout(() => UI.toast.classList.remove("show"), 1400);
+}
+
+/* ========= Service worker ========= */
+function registerSW(){
+  if(!("serviceWorker" in navigator)) return;
+  navigator.serviceWorker.register("./service-worker.js").catch(()=>{});
+}
 </script>
 </body>
 </html>
