@@ -55,8 +55,7 @@
       position:absolute; inset:-40px;
       background: radial-gradient(circle at 30% 30%, rgba(124,92,255,.18), transparent 45%),
                   radial-gradient(circle at 80% 25%, rgba(74,163,255,.16), transparent 55%);
-      opacity:.9;
-      pointer-events:none;
+      opacity:.9; pointer-events:none;
     }
     .title{ position:relative; z-index:1; }
     .title h1{ margin:0; letter-spacing:1px; text-transform:uppercase; font-size:20px; }
@@ -68,7 +67,7 @@
       border:1px solid var(--line);
       border-radius:14px;
       padding:10px 12px;
-      min-width:170px;
+      min-width:180px;
       box-shadow: var(--glow);
       text-align:right;
     }
@@ -185,7 +184,7 @@
       text-transform:uppercase; letter-spacing:.6px;
     }
 
-    .hidden{ display:none; }
+    .hidden{ display:none !important; }
 
     .toast{
       position:fixed; left:50%; bottom:16px;
@@ -199,8 +198,21 @@
       opacity:0;
       pointer-events:none;
       transition: opacity .18s ease, transform .18s ease;
+      z-index: 9998;
     }
     .toast.show{ opacity:1; transform:translateX(-50%) translateY(-4px); }
+
+    /* ===== Solo Leveling aura by rank ===== */
+    body.rank-S  { filter: drop-shadow(0 0 10px rgba(74,163,255,.12)); }
+    body.rank-SS { filter: drop-shadow(0 0 16px rgba(124,92,255,.16)); }
+    body.rank-SSS{ filter: drop-shadow(0 0 22px rgba(0,255,154,.14)); }
+
+    .rankGlow{
+      text-shadow:
+        0 0 8px rgba(124,92,255,.30),
+        0 0 14px rgba(74,163,255,.20),
+        0 0 20px rgba(0,255,154,.12);
+    }
   </style>
 </head>
 
@@ -209,7 +221,7 @@
     <header class="header">
       <div class="title">
         <h1>🩸 SHADOW SYSTEM</h1>
-        <div class="sub">Unlimited days • Sunday start • Workouts editable • Ranks to SSS</div>
+        <div class="sub">Unlimited days • Sunday start • Editable workouts • SYSTEM rank-ups</div>
       </div>
 
       <div class="badges">
@@ -272,6 +284,33 @@
     </section>
 
     <section class="card">
+      <h2>System</h2>
+      <div class="small" id="dailyQuote">...</div>
+
+      <div style="height:12px"></div>
+
+      <div class="small">90-day Arc</div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:8px;">
+        <div style="flex:1; min-width:240px; border:1px solid rgba(255,255,255,.10); border-radius:14px; background: rgba(0,0,0,.18); padding:10px;">
+          <div style="display:flex; justify-content:space-between; gap:10px; font-size:12px; color:rgba(167,167,217,.95);">
+            <span id="arcLabel">Arc 1</span>
+            <span id="arcDayLabel">Day 1 / 90</span>
+          </div>
+          <div style="height:10px"></div>
+          <div style="height:10px; border-radius:999px; background: rgba(255,255,255,.08); overflow:hidden;">
+            <div id="arcBar" style="height:10px; width:0%; background: linear-gradient(90deg, rgba(124,92,255,.95), rgba(74,163,255,.85));"></div>
+          </div>
+        </div>
+
+        <button class="btn-undo" onclick="startNewArc()">Start New Arc</button>
+      </div>
+
+      <div class="small" style="margin-top:8px;">
+        Tip: you can keep using the app forever — arcs just give you 90-day “seasons”.
+      </div>
+    </section>
+
+    <section class="card">
       <h2>Mission Log</h2>
       <ul class="log" id="log"></ul>
     </section>
@@ -303,10 +342,54 @@
 
   <div class="toast" id="toast">Saved.</div>
 
+  <!-- Solo Leveling "SYSTEM" overlay -->
+  <div class="hidden" id="systemOverlay" style="
+    position:fixed; inset:0; z-index:9999;
+    display:flex; align-items:center; justify-content:center;
+    background: radial-gradient(circle at 50% 40%, rgba(124,92,255,.20), rgba(0,0,0,.85) 55%, rgba(0,0,0,.96));
+    backdrop-filter: blur(2px);
+  ">
+    <div style="
+      width:min(760px,92vw);
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(10,10,20,.75);
+      border-radius:18px;
+      padding:18px;
+      box-shadow: 0 0 22px rgba(124,92,255,.25), 0 0 38px rgba(0,255,154,.10);
+      position:relative;
+      overflow:hidden;
+    ">
+      <div style="font-weight:900; letter-spacing:2px; text-transform:uppercase; color:rgba(233,233,255,.95);">
+        SYSTEM
+      </div>
+      <div id="systemTitle" style="margin-top:8px; font-size:22px; font-weight:900; letter-spacing:1px;">
+        Rank Up
+      </div>
+      <div id="systemText" style="margin-top:10px; color:rgba(233,233,255,.85); line-height:1.5; white-space:pre-wrap;">
+        You have grown stronger.
+      </div>
+
+      <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; position:relative; z-index:2;">
+        <button class="btn-undo" onclick="hideSystem()">Continue</button>
+      </div>
+
+      <div style="
+        position:absolute; inset:-80px; z-index:1;
+        background:
+          radial-gradient(circle at 30% 30%, rgba(124,92,255,.22), transparent 55%),
+          radial-gradient(circle at 80% 25%, rgba(74,163,255,.18), transparent 60%),
+          radial-gradient(circle at 55% 80%, rgba(0,255,154,.10), transparent 55%);
+        opacity:.85;
+        pointer-events:none;
+        transform: rotate(-6deg);
+      "></div>
+    </div>
+  </div>
+
 <script>
 /* ========= Storage keys ========= */
-const KEY_STATE = "shadow_full_unlimited_state_v1";
-const KEY_WORK  = "shadow_full_unlimited_workouts_v1";
+const KEY_STATE = "shadow_full_everything_state_v1";
+const KEY_WORK  = "shadow_full_everything_workouts_v1";
 
 /* ========= XP values ========= */
 const XP = { FULL: 100, MINIMUM: 40, CONDITIONING: 120 };
@@ -321,6 +404,20 @@ const RANKS = [
   { name: "S",   minXP: 10000 },
   { name: "SS",  minXP: 15000 },
   { name: "SSS", minXP: 22000 }
+];
+
+/* ========= Arcs & Quotes ========= */
+const ARC_LEN = 90;
+const QUOTES = [
+  "System: No zero days. Even a ritual counts.",
+  "System: Weakness is temporary. Discipline is permanent.",
+  "System: One more rep. One more breath.",
+  "System: You don’t need motivation. You need a command.",
+  "System: Today’s mission is simple—be stronger than yesterday.",
+  "System: Pain is data. Learn from it.",
+  "System: The hunter who shows up wins.",
+  "System: Ascension is built on rituals.",
+  "System: A boss fight reveals who you are."
 ];
 
 /* ========= Default workouts (Sunday start) ========= */
@@ -457,8 +554,81 @@ function setTodayWorkout(){
   UI.todayWorkoutText.textContent = workouts[idx] || "No workout set for today.";
 }
 
+/* ========= Quotes & Arcs ========= */
+function setDailyQuote(){
+  const today = isoDate(new Date());
+  let seed = 0;
+  for(const ch of today) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+  const q = QUOTES[seed % QUOTES.length];
+  const el = document.getElementById("dailyQuote");
+  if(el) el.textContent = q;
+}
+function arcInfo(){
+  const day = dayNumberToday();
+  const arc = Math.floor((day - 1) / ARC_LEN) + 1;
+  const arcDay = ((day - 1) % ARC_LEN) + 1;
+  return { arc, arcDay, day };
+}
+function renderArc(){
+  const { arc, arcDay } = arcInfo();
+  const arcLabel = document.getElementById("arcLabel");
+  const arcDayLabel = document.getElementById("arcDayLabel");
+  const arcBar = document.getElementById("arcBar");
+  if(!arcLabel || !arcDayLabel || !arcBar) return;
+
+  arcLabel.textContent = `Arc ${arc}`;
+  arcDayLabel.textContent = `Day ${arcDay} / ${ARC_LEN}`;
+  arcBar.style.width = `${Math.round((arcDay / ARC_LEN) * 100)}%`;
+}
+window.startNewArc = function(){
+  state.startISO = isoDate(new Date());
+  save(KEY_STATE, state);
+  toast("New Arc started.");
+  render();
+};
+
+/* ========= SYSTEM overlay + sound ========= */
+window.hideSystem = function(){
+  const ov = document.getElementById("systemOverlay");
+  if(ov) ov.classList.add("hidden");
+};
+function showSystem(title, text){
+  const ov = document.getElementById("systemOverlay");
+  const t = document.getElementById("systemTitle");
+  const s = document.getElementById("systemText");
+  if(t) t.textContent = title;
+  if(s) s.textContent = text;
+  if(ov) ov.classList.remove("hidden");
+  playRankUpSound();
+}
+function playRankUpSound(){
+  try{
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if(!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+
+    o.type = "sine";
+    o.frequency.setValueAtTime(180, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(420, ctx.currentTime + 0.12);
+    o.frequency.exponentialRampToValueAtTime(240, ctx.currentTime + 0.30);
+
+    g.gain.setValueAtTime(0.0001, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
+
+    o.connect(g); g.connect(ctx.destination);
+    o.start();
+    o.stop(ctx.currentTime + 0.36);
+    o.onended = () => ctx.close();
+  } catch(e){}
+}
+
 /* ========= Actions ========= */
 window.logWorkout = function(kind){
+  const beforeRank = getRankInfo(state.xp).current.name;
+
   const today = isoDate(new Date());
   if(hasTodayLog()) return toast("Already logged today. Undo if needed.");
 
@@ -467,9 +637,18 @@ window.logWorkout = function(kind){
   state.logs.push({ iso: today, kind, xp: xpGain, ...stats });
   state.xp += xpGain;
 
+  const afterRank = getRankInfo(state.xp).current.name;
   save(KEY_STATE, state);
+
   toast(`Mission logged (+${xpGain} XP).`);
   render();
+
+  if(afterRank !== beforeRank){
+    showSystem(
+      "Rank Up",
+      `You have awakened greater power.\nRank: ${beforeRank} → ${afterRank}`
+    );
+  }
 };
 
 window.saveStatsOnly = function(){
@@ -542,11 +721,20 @@ window.restoreWorkoutDefaults = function(){
 
 /* ========= Render ========= */
 function render(){
+  // rank aura reset
+  document.body.classList.remove("rank-S","rank-SS","rank-SSS");
+
   UI.dayNum.textContent = dayNumberToday();
 
   const info = getRankInfo(state.xp);
   UI.xp.textContent = state.xp;
   UI.rank.textContent = info.current.name;
+
+  UI.rank.classList.remove("rankGlow");
+  if(info.current.name === "S" || info.current.name === "SS" || info.current.name === "SSS"){
+    UI.rank.classList.add("rankGlow");
+    document.body.classList.add(`rank-${info.current.name}`);
+  }
 
   if(info.next){
     const remaining = Math.max(0, info.next.minXP - state.xp);
@@ -560,11 +748,13 @@ function render(){
   const t = todayLog();
   UI.todayStatus.innerHTML = t
     ? `<span class="ok">Logged today:</span> ${t.kind} (+${t.xp} XP)`
-    : `<span class="warn">Not logged today.</span> Even minimum counts.`;
+    : `<span class="warn">Not logged today.</span> Even Ritual counts.`;
 
   renderLog();
   renderCharts();
   setTodayWorkout();
+  setDailyQuote();
+  renderArc();
 }
 
 function renderLog(){
@@ -625,7 +815,6 @@ function drawLineChart(canvas, points, label){
   const w = canvas.width, h = canvas.height;
   ctx.clearRect(0,0,w,h);
 
-  // grid
   ctx.strokeStyle = "rgba(255,255,255,0.08)";
   ctx.lineWidth = 1;
   for(let i=1;i<6;i++){
@@ -633,11 +822,9 @@ function drawLineChart(canvas, points, label){
     ctx.beginPath(); ctx.moveTo(40, y); ctx.lineTo(w-12, y); ctx.stroke();
   }
 
-  // axes
   ctx.strokeStyle = "rgba(255,255,255,0.12)";
   ctx.beginPath(); ctx.moveTo(40, 12); ctx.lineTo(40, h-30); ctx.lineTo(w-12, h-30); ctx.stroke();
 
-  // title
   ctx.fillStyle = "rgba(233,233,255,0.9)";
   ctx.font = "bold 16px system-ui";
   ctx.fillText(label, 44, 28);
@@ -663,7 +850,6 @@ function drawLineChart(canvas, points, label){
     return plotY1 - t*(plotY1-plotY0);
   };
 
-  // line
   ctx.strokeStyle = "rgba(124,92,255,0.9)";
   ctx.lineWidth = 3;
   ctx.beginPath();
@@ -671,14 +857,12 @@ function drawLineChart(canvas, points, label){
   for(let i=1;i<points.length;i++) ctx.lineTo(xAt(i), yAt(points[i].y));
   ctx.stroke();
 
-  // points
   ctx.fillStyle = "rgba(0,255,154,0.9)";
   for(let i=0;i<points.length;i++){
     const x = xAt(i), y = yAt(points[i].y);
     ctx.beginPath(); ctx.arc(x,y,4,0,Math.PI*2); ctx.fill();
   }
 
-  // min/max labels
   ctx.fillStyle = "rgba(167,167,217,0.85)";
   ctx.font = "12px system-ui";
   ctx.fillText(`min: ${minY.toFixed(1)}`, 44, h-10);
