@@ -1,4 +1,4 @@
-const CACHE = "shadow-everything-v1";
+const CACHE = "shadow-everything-v3";
 const ASSETS = [
   "./",
   "./index.html",
