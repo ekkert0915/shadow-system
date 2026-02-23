@@ -11,30 +11,40 @@
 
   <style>
     :root{
-      --bg:#070712;
       --text:#e9e9ff;
       --muted:#a7a7d9;
       --line:rgba(255,255,255,.10);
+
       --purple:#7c5cff;
       --green:#00ff9a;
       --blue:#4aa3ff;
       --pink:#ff5bd6;
-      --glow: 0 0 18px rgba(124,92,255,.22), 0 0 26px rgba(0,255,154,.10);
+
       --shadow: 0 18px 55px rgba(0,0,0,.65);
+      --glow: 0 0 18px rgba(124,92,255,.22), 0 0 26px rgba(0,255,154,.10);
+
+      /* Theme-controlled background layers */
+      --bgSolid:#070712;
+      --bgA: rgba(124,92,255,.18);
+      --bgB: rgba(74,163,255,.16);
+      --bgC: rgba(0,255,154,.10);
+      --bgTop:#05050d;
     }
+
     *{ box-sizing:border-box; }
     body{
       margin:0;
       font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
       background:
-        radial-gradient(900px 600px at 20% 10%, rgba(124,92,255,.18), transparent 60%),
-        radial-gradient(850px 650px at 85% 15%, rgba(74,163,255,.16), transparent 60%),
-        radial-gradient(900px 700px at 55% 95%, rgba(0,255,154,.10), transparent 55%),
-        linear-gradient(180deg, #05050d, var(--bg));
+        radial-gradient(900px 600px at 20% 10%, var(--bgA), transparent 60%),
+        radial-gradient(850px 650px at 85% 15%, var(--bgB), transparent 60%),
+        radial-gradient(900px 700px at 55% 95%, var(--bgC), transparent 55%),
+        linear-gradient(180deg, var(--bgTop), var(--bgSolid));
       color:var(--text);
       min-height:100vh;
       padding:18px;
     }
+
     .wrap{ width:min(900px, 100%); margin:0 auto; display:grid; gap:12px; }
 
     .header{
@@ -53,13 +63,14 @@
     .header::after{
       content:"";
       position:absolute; inset:-40px;
-      background: radial-gradient(circle at 30% 30%, rgba(124,92,255,.18), transparent 45%),
-                  radial-gradient(circle at 80% 25%, rgba(74,163,255,.16), transparent 55%);
+      background:
+        radial-gradient(circle at 30% 30%, rgba(124,92,255,.18), transparent 45%),
+        radial-gradient(circle at 80% 25%, rgba(74,163,255,.16), transparent 55%);
       opacity:.9; pointer-events:none;
     }
     .title{ position:relative; z-index:1; }
     .title h1{ margin:0; letter-spacing:1px; text-transform:uppercase; font-size:20px; }
-    .sub{ margin-top:6px; color:var(--muted); font-size:12px; }
+    .sub{ margin-top:6px; color:var(--muted); font-size:12px; line-height:1.3; }
 
     .badges{ position:relative; z-index:1; display:flex; gap:10px; flex-wrap:wrap; margin-left:auto; }
     .badge{
@@ -72,7 +83,7 @@
       text-align:right;
     }
     .badge .k{ font-size:11px; color:var(--muted); letter-spacing:1px; text-transform:uppercase; }
-    .badge .v{ margin-top:3px; font-size:16px; font-weight:800; }
+    .badge .v{ margin-top:3px; font-size:16px; font-weight:900; }
 
     .card{
       background: rgba(15,16,32,.78);
@@ -99,10 +110,11 @@
     button{
       font: inherit; border:none; cursor:pointer;
       padding:12px 12px; border-radius:14px;
-      font-weight:800; letter-spacing:.6px; text-transform:uppercase;
-      transition: transform .08s ease;
+      font-weight:900; letter-spacing:.6px; text-transform:uppercase;
+      transition: transform .08s ease, filter .12s ease;
       box-shadow: 0 10px 28px rgba(0,0,0,.35);
     }
+    button:hover{ filter: brightness(1.03); }
     button:active{ transform: translateY(1px) scale(.99); }
 
     .btn-full{ background: linear-gradient(90deg, var(--purple), var(--blue)); color:#070712; }
@@ -119,7 +131,7 @@
     @media (max-width: 720px){ .grid{ grid-template-columns: repeat(2, minmax(140px, 1fr)); } }
 
     label{ font-size:12px; color:var(--muted); }
-    input, textarea{
+    input, textarea, select{
       width:100%; padding:10px;
       border-radius:12px;
       border:1px solid var(--line);
@@ -180,7 +192,7 @@
       padding:10px;
     }
     .dayTitle{
-      font-weight:800; margin-bottom:6px;
+      font-weight:900; margin-bottom:6px;
       text-transform:uppercase; letter-spacing:.6px;
     }
 
@@ -213,6 +225,18 @@
         0 0 14px rgba(74,163,255,.20),
         0 0 20px rgba(0,255,154,.12);
     }
+
+    .pill{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.18);
+      font-size:11px;
+      color: rgba(233,233,255,.90);
+    }
   </style>
 </head>
 
@@ -221,7 +245,10 @@
     <header class="header">
       <div class="title">
         <h1>🩸 SHADOW SYSTEM</h1>
-        <div class="sub">Unlimited days • Sunday start • Editable workouts • SYSTEM rank-ups</div>
+        <div class="sub">
+          Unlimited days • Sunday start • Editable templates + auto-scaling by rank<br>
+          Rest days counted from your plan • Swimming = Active Recovery
+        </div>
       </div>
 
       <div class="badges">
@@ -236,14 +263,21 @@
         <div class="badge">
           <div class="k">Rank</div>
           <div class="v"><span id="rank">E</span> • <span id="xp">0</span> XP</div>
-          <div class="k" style="margin-top:6px"><span id="nextRankLine">Next: D in 500 XP</span></div>
+          <div class="k" style="margin-top:6px"><span id="nextRankLine">Next: D in 1200 XP</span></div>
         </div>
       </div>
     </header>
 
     <section class="card">
       <h2>Today’s Workout</h2>
-      <div class="small" id="todayWorkoutName"></div>
+
+      <div class="row" style="justify-content:space-between;">
+        <div class="small" id="todayWorkoutName"></div>
+        <div class="pill">
+          <span id="restDaysPill">Rest Days: 2</span>
+        </div>
+      </div>
+
       <pre class="workoutBox" id="todayWorkoutText"></pre>
       <div class="small" id="todayStatus">Not logged today.</div>
 
@@ -256,7 +290,13 @@
       <div class="row">
         <button class="btn-undo" onclick="undoToday()">Undo Today</button>
         <button class="btn-undo" onclick="togglePanel('customPanel')">Customize Workouts</button>
+        <button class="btn-undo" onclick="togglePanel('settingsPanel')">Settings</button>
         <button class="btn-reset" onclick="resetAll()">Reset</button>
+      </div>
+
+      <div class="small" style="margin-top:8px">
+        Auto-scaling tip: use placeholders like <b>{PUSH}</b>, <b>{SQUAT}</b>, <b>{SETS}</b>, <b>{PLANK}</b>.
+        The SYSTEM fills them based on your rank.
       </div>
     </section>
 
@@ -306,7 +346,7 @@
       </div>
 
       <div class="small" style="margin-top:8px;">
-        Tip: you can keep using the app forever — arcs just give you 90-day “seasons”.
+        Swimming on rest days: keep it easy/moderate (active recovery). Boss-level sprints belong on training days.
       </div>
     </section>
 
@@ -315,18 +355,57 @@
       <ul class="log" id="log"></ul>
     </section>
 
+    <section class="card hidden" id="settingsPanel">
+      <h2>Settings</h2>
+
+      <div class="grid">
+        <div>
+          <label>Theme / Background</label>
+          <select id="themeSelect"></select>
+        </div>
+
+        <div>
+          <label>Rank Difficulty</label>
+          <select id="difficultySelect">
+            <option value="hard">Hard (recommended)</option>
+            <option value="normal">Normal</option>
+          </select>
+        </div>
+
+        <div style="grid-column: 1 / -1;">
+          <label>What counts as a Rest Day?</label>
+          <div class="small">
+            Any day whose workout text contains <b>REST</b> or <b>RECOVERY</b> will be counted as a rest day.
+            (So you can customize freely.)
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <button class="btn-full" onclick="saveSettings()">Save Settings</button>
+        <button class="btn-undo" onclick="togglePanel('settingsPanel')">Close</button>
+      </div>
+
+      <div class="small" style="margin-top:8px;">
+        If icons don’t update, bump the cache name in <b>service-worker.js</b>.
+      </div>
+    </section>
+
     <section class="card hidden" id="customPanel">
       <h2>Customize Your Week (Sunday Start)</h2>
-      <div class="small">Edit each day’s workout. Save. Today updates instantly.</div>
+      <div class="small">
+        These are <b>templates</b>. Use placeholders like <b>{PUSH}</b>, <b>{SQUAT}</b>, <b>{SETS}</b>, <b>{PLANK}</b>.
+        The SYSTEM scales them with your rank.
+      </div>
 
-      <div class="dayGrid">
-        <div class="dayCard"><div class="dayTitle">Sunday</div><textarea id="w0" rows="8"></textarea></div>
-        <div class="dayCard"><div class="dayTitle">Monday</div><textarea id="w1" rows="8"></textarea></div>
-        <div class="dayCard"><div class="dayTitle">Tuesday</div><textarea id="w2" rows="8"></textarea></div>
-        <div class="dayCard"><div class="dayTitle">Wednesday</div><textarea id="w3" rows="8"></textarea></div>
-        <div class="dayCard"><div class="dayTitle">Thursday</div><textarea id="w4" rows="8"></textarea></div>
-        <div class="dayCard"><div class="dayTitle">Friday</div><textarea id="w5" rows="8"></textarea></div>
-        <div class="dayCard"><div class="dayTitle">Saturday</div><textarea id="w6" rows="8"></textarea></div>
+      <div class="dayGrid" style="margin-top:10px">
+        <div class="dayCard"><div class="dayTitle">Sunday</div><textarea id="w0" rows="9"></textarea></div>
+        <div class="dayCard"><div class="dayTitle">Monday</div><textarea id="w1" rows="9"></textarea></div>
+        <div class="dayCard"><div class="dayTitle">Tuesday</div><textarea id="w2" rows="9"></textarea></div>
+        <div class="dayCard"><div class="dayTitle">Wednesday</div><textarea id="w3" rows="9"></textarea></div>
+        <div class="dayCard"><div class="dayTitle">Thursday</div><textarea id="w4" rows="9"></textarea></div>
+        <div class="dayCard"><div class="dayTitle">Friday</div><textarea id="w5" rows="9"></textarea></div>
+        <div class="dayCard"><div class="dayTitle">Saturday</div><textarea id="w6" rows="9"></textarea></div>
       </div>
 
       <div class="row">
@@ -335,7 +414,9 @@
       </div>
 
       <div class="small" style="margin-top:8px">
-        Want more ranks? Edit the <b>RANKS</b> array in the script.
+        Placeholder cheatsheet:
+        <b>{SETS}</b>, <b>{PUSH}</b>, <b>{PUSH_VAR}</b>, <b>{ROW}</b>, <b>{SQUAT}</b>, <b>{HINGE}</b>,
+        <b>{PLANK}</b>, <b>{HIIT_ROUNDS}</b>, <b>{HIIT_WORK}</b>, <b>{HIIT_REST}</b>
       </div>
     </section>
   </div>
@@ -359,13 +440,13 @@
       position:relative;
       overflow:hidden;
     ">
-      <div style="font-weight:900; letter-spacing:2px; text-transform:uppercase; color:rgba(233,233,255,.95);">
+      <div style="font-weight:900; letter-spacing:2px; text-transform:uppercase; color:rgba(233,233,255,.95); position:relative; z-index:2;">
         SYSTEM
       </div>
-      <div id="systemTitle" style="margin-top:8px; font-size:22px; font-weight:900; letter-spacing:1px;">
+      <div id="systemTitle" style="margin-top:8px; font-size:22px; font-weight:900; letter-spacing:1px; position:relative; z-index:2;">
         Rank Up
       </div>
-      <div id="systemText" style="margin-top:10px; color:rgba(233,233,255,.85); line-height:1.5; white-space:pre-wrap;">
+      <div id="systemText" style="margin-top:10px; color:rgba(233,233,255,.85); line-height:1.5; white-space:pre-wrap; position:relative; z-index:2;">
         You have grown stronger.
       </div>
 
@@ -388,14 +469,26 @@
 
 <script>
 /* ========= Storage keys ========= */
-const KEY_STATE = "shadow_full_everything_state_v1";
-const KEY_WORK  = "shadow_full_everything_workouts_v1";
+const KEY_STATE = "shadow_scaling_state_v1";
+const KEY_WORK  = "shadow_scaling_workouts_v1";
+const KEY_SET   = "shadow_scaling_settings_v1";
 
 /* ========= XP values ========= */
 const XP = { FULL: 100, MINIMUM: 40, CONDITIONING: 120 };
 
-/* ========= Rank ladder (edit anytime) ========= */
-const RANKS = [
+/* ========= Difficulty ladders ========= */
+const RANKS_NORMAL = [
+  { name: "E",   minXP: 0 },
+  { name: "D",   minXP: 500 },
+  { name: "C",   minXP: 1500 },
+  { name: "B",   minXP: 3000 },
+  { name: "A",   minXP: 6000 },
+  { name: "S",   minXP: 10000 },
+  { name: "SS",  minXP: 15000 },
+  { name: "SSS", minXP: 22000 }
+];
+
+const RANKS_HARD = [
   { name: "E",   minXP: 0 },
   { name: "D",   minXP: 1200 },
   { name: "C",   minXP: 3500 },
@@ -405,6 +498,14 @@ const RANKS = [
   { name: "SS",  minXP: 38000 },
   { name: "SSS", minXP: 55000 }
 ];
+
+/* ========= Themes ========= */
+const THEMES = {
+  "Shadow Default": { bgSolid:"#070712", bgTop:"#05050d", bgA:"rgba(124,92,255,.18)", bgB:"rgba(74,163,255,.16)", bgC:"rgba(0,255,154,.10)" },
+  "Abyss Blue":     { bgSolid:"#040a14", bgTop:"#03070f", bgA:"rgba(74,163,255,.20)", bgB:"rgba(124,92,255,.10)", bgC:"rgba(0,255,154,.06)" },
+  "Monarch Purple": { bgSolid:"#070312", bgTop:"#04020a", bgA:"rgba(124,92,255,.24)", bgB:"rgba(255,91,214,.12)", bgC:"rgba(74,163,255,.08)" },
+  "Red Eclipse":    { bgSolid:"#12020a", bgTop:"#070106", bgA:"rgba(255,91,214,.10)", bgB:"rgba(255,80,80,.12)", bgC:"rgba(124,92,255,.10)" }
+};
 
 /* ========= Arcs & Quotes ========= */
 const ARC_LEN = 90;
@@ -420,42 +521,52 @@ const QUOTES = [
   "System: A boss fight reveals who you are."
 ];
 
-/* ========= Default workouts (Sunday start) ========= */
+/* ========= Default workout templates (Sunday start) =========
+   These scale automatically using placeholders.
+*/
 const DEFAULT_WORKOUTS = [
-`SUNDAY — PUSH
-• Incline Push-ups 4×8–12
-• Pike Push-ups 3×6–10
-• Chair Dips 3×8–12
-• DB Shoulder Press 3×10–15`,
-`MONDAY — PULL
-• Pull-up Negatives 4×3–6
-• Backpack Rows 4×10–15
-• DB Curls 3×12–15
-• Dead Hang 2×20–40 sec`,
-`TUESDAY — LEGS
-• Squats 4×15–20
-• Bulgarian Split Squats 3×8–12 each
-• DB RDL 3×12–15
-• Calf Raises 3×15–20`,
-`WEDNESDAY — CONDITIONING + CORE
-• 8 rounds: 20s hard / 40s rest
-• Hanging Knee Raises 3×8–12
-• Plank 2×60 sec
-• Russian Twists 2×20`,
-`THURSDAY — FULL BODY (3–4 rounds)
-• Incline Push-ups 8–12
-• Backpack Rows 12
-• Squats 15
-• Pull-up Negatives 3
-• Plank 45 sec`,
-`FRIDAY — WEAK POINTS
-• Push-up progression (negatives + incline)
-• Extra pull-up negatives
+`SUNDAY — PUSH (SYSTEM)
+• {PUSH_VAR} {PUSH} reps × {SETS} sets
+• Pike Push-ups {PUSH} reps × {SETS_MINUS1} sets
+• Chair Dips {PUSH} reps × {SETS_MINUS1} sets
+• Plank {PLANK} sec × 2`,
+`MONDAY — PULL (SYSTEM)
+• Rows {ROW} reps × {SETS} sets
+• Pull Negatives {PULL_NEG} reps × {SETS_MINUS1} sets
+• Dead Hang {HANG} sec × 2
+• Hollow Hold {PLANK} sec × 1`,
+`TUESDAY — LEGS (SYSTEM)
+• Squats {SQUAT} reps × {SETS} sets
+• Split Squats {SQUAT_MINUS4} reps/side × {SETS_MINUS1} sets
+• Hinge (RDL) {HINGE} reps × {SETS_MINUS1} sets
+• Calf Raises {SQUAT} reps × 2`,
+`WEDNESDAY — RECOVERY (REST)
+• Walk 20–30 min OR Swim 20–45 min (easy/moderate)
+• Stretch 10 min
+• Mobility 5 min`,
+`THURSDAY — FULL BODY (SYSTEM)
+(Repeat {ROUNDS} rounds)
+• {PUSH_VAR} {PUSH} reps
+• Rows {ROW} reps
+• Squats {SQUAT} reps
+• Plank {PLANK} sec`,
+`FRIDAY — WEAK POINTS (SYSTEM)
+• Push practice: {PUSH_VAR} {PUSH} reps × {SETS_MINUS1} sets
+• Row practice: {ROW} reps × {SETS_MINUS1} sets
+• Core: Plank {PLANK} sec × 2
 • Mobility 10 min`,
-`SATURDAY — RECOVERY
-• Walk 20–30 min
+`SATURDAY — RECOVERY (REST)
+• Swim 20–45 min (easy/moderate) OR Walk 30 min
 • Stretch 10 min`
 ];
+
+/* ========= Settings load ========= */
+const settings = load(KEY_SET) ?? { themeName: "Shadow Default", difficulty: "hard" };
+
+/* ========= Rank ladder pick ========= */
+function currentRanks(){
+  return (settings.difficulty === "normal") ? RANKS_NORMAL : RANKS_HARD;
+}
 
 /* ========= Load state ========= */
 const state = load(KEY_STATE) ?? { startISO: isoDate(new Date()), xp: 0, logs: [] };
@@ -472,16 +583,21 @@ const UI = {
   log: document.getElementById("log"),
   todayWorkoutName: document.getElementById("todayWorkoutName"),
   todayWorkoutText: document.getElementById("todayWorkoutText"),
+  restDaysPill: document.getElementById("restDaysPill"),
   inPush: document.getElementById("inPush"),
   inSquat: document.getElementById("inSquat"),
   inRow: document.getElementById("inRow"),
   inWeight: document.getElementById("inWeight"),
   strengthChart: document.getElementById("strengthChart"),
   weightChart: document.getElementById("weightChart"),
-  toast: document.getElementById("toast")
+  toast: document.getElementById("toast"),
+  themeSelect: document.getElementById("themeSelect"),
+  difficultySelect: document.getElementById("difficultySelect")
 };
 
 /* ========= Init ========= */
+populateSettingsUI();
+applyTheme(settings.themeName);
 hydrateWorkoutEditor();
 render();
 registerSW();
@@ -499,7 +615,7 @@ function daysBetween(aISO, bISO){
 }
 function dayNumberToday(){
   const diff = daysBetween(state.startISO, isoDate(new Date()));
-  return Math.max(1, diff + 1); // unlimited
+  return Math.max(1, diff + 1);
 }
 function hasTodayLog(){
   const t = isoDate(new Date());
@@ -535,6 +651,7 @@ function readInputs(){
 
 /* ========= Rank logic ========= */
 function getRankInfo(xp){
+  const RANKS = currentRanks();
   let current = RANKS[0];
   for(const r of RANKS){
     if(xp >= r.minXP) current = r;
@@ -544,6 +661,75 @@ function getRankInfo(xp){
   const next = (idx >= 0 && idx < RANKS.length - 1) ? RANKS[idx + 1] : null;
   return { current, next };
 }
+function rankIndex(name){
+  const order = ["E","D","C","B","A","S","SS","SSS"];
+  return Math.max(0, order.indexOf(name));
+}
+
+/* ========= Auto-scaling (SYSTEM) =========
+   You can customize workouts freely, but if you use placeholders
+   like {PUSH} or {SETS}, the app scales them based on your rank.
+*/
+function scalingForRank(rankName){
+  const i = rankIndex(rankName);
+
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+  const sets = clamp(3 + Math.floor(i/2), 3, 6);        // E=3, D=3, C=4, B=4, A=5, S=5, SS=6, SSS=6
+  const rounds = clamp(3 + Math.floor(i/3), 3, 6);      // for circuits
+
+  const push = clamp(6 + i*2, 6, 25);
+  const row  = clamp(8 + i*2, 8, 28);
+  const squat= clamp(12 + i*3, 12, 40);
+  const hinge= clamp(10 + i*2, 10, 28);
+
+  const plank = clamp(25 + i*10, 25, 120);
+  const hang  = clamp(20 + i*8, 20, 90);
+  const pullNeg = clamp(3 + Math.floor(i/1.5), 3, 10);
+
+  const hiitRounds = clamp(6 + Math.floor(i/1.5), 6, 14);
+  const hiitWork = clamp(20 + i*2, 20, 40);
+  const hiitRest = clamp(40 - i*3, 15, 40);
+
+  const pushVar = (() => {
+    if(i <= 0) return "Incline Push-ups";
+    if(i === 1) return "Incline Push-ups";
+    if(i === 2) return "Push-ups (knees ok)";
+    if(i === 3) return "Push-ups";
+    if(i === 4) return "Decline Push-ups";
+    if(i === 5) return "Diamond Push-ups";
+    if(i === 6) return "Archer Push-ups";
+    return "One-arm Progression";
+  })();
+
+  return {
+    SETS: sets,
+    SETS_MINUS1: Math.max(2, sets-1),
+    ROUNDS: rounds,
+
+    PUSH: push,
+    ROW: row,
+    SQUAT: squat,
+    SQUAT_MINUS4: Math.max(6, squat-4),
+    HINGE: hinge,
+    PLANK: plank,
+    HANG: hang,
+    PULL_NEG: pullNeg,
+
+    HIIT_ROUNDS: hiitRounds,
+    HIIT_WORK: hiitWork,
+    HIIT_REST: hiitRest,
+
+    PUSH_VAR: pushVar
+  };
+}
+
+function applyPlaceholders(template, rankName){
+  const s = scalingForRank(rankName);
+  return template.replace(/\{([A-Z_]+)\}/g, (m, key) => {
+    if(key in s) return String(s[key]);
+    return m; // unknown placeholder stays
+  });
+}
 
 /* ========= Sunday start highlight ========= */
 function todayIndexSundayStart(){ return new Date().getDay(); } // 0=Sun..6=Sat
@@ -551,7 +737,25 @@ function setTodayWorkout(){
   const idx = todayIndexSundayStart();
   const names = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
   UI.todayWorkoutName.textContent = `Today is ${names[idx]} — highlighted mission`;
-  UI.todayWorkoutText.textContent = workouts[idx] || "No workout set for today.";
+
+  const rankName = getRankInfo(state.xp).current.name;
+  const template = workouts[idx] || "No workout set for today.";
+  const rendered = applyPlaceholders(template, rankName);
+
+  UI.todayWorkoutText.textContent = rendered;
+}
+
+/* ========= Rest days count ========= */
+function isRestDayText(t){
+  const u = (t || "").toUpperCase();
+  return u.includes("REST") || u.includes("RECOVERY");
+}
+function countRestDays(){
+  let n = 0;
+  for(const w of workouts){
+    if(isRestDayText(w)) n++;
+  }
+  return n;
 }
 
 /* ========= Quotes & Arcs ========= */
@@ -688,9 +892,10 @@ window.togglePanel = function(id){
 };
 
 window.resetAll = function(){
-  if(!confirm("Reset EVERYTHING? This clears logs + workouts.")) return;
+  if(!confirm("Reset EVERYTHING? This clears logs + workouts + settings.")) return;
   localStorage.removeItem(KEY_STATE);
   localStorage.removeItem(KEY_WORK);
+  localStorage.removeItem(KEY_SET);
   location.reload();
 };
 
@@ -719,9 +924,50 @@ window.restoreWorkoutDefaults = function(){
   render();
 };
 
+/* ========= Settings ========= */
+function populateSettingsUI(){
+  // Theme select
+  if(UI.themeSelect){
+    UI.themeSelect.innerHTML = "";
+    Object.keys(THEMES).forEach(name => {
+      const opt = document.createElement("option");
+      opt.value = name;
+      opt.textContent = name;
+      UI.themeSelect.appendChild(opt);
+    });
+    UI.themeSelect.value = settings.themeName || "Shadow Default";
+  }
+
+  // Difficulty select
+  if(UI.difficultySelect){
+    UI.difficultySelect.value = settings.difficulty || "hard";
+  }
+}
+
+window.saveSettings = function(){
+  const themeName = UI.themeSelect?.value || "Shadow Default";
+  const difficulty = UI.difficultySelect?.value || "hard";
+
+  settings.themeName = themeName;
+  settings.difficulty = difficulty;
+
+  save(KEY_SET, settings);
+  applyTheme(themeName);
+  toast("Settings saved.");
+  render();
+};
+
+function applyTheme(themeName){
+  const t = THEMES[themeName] || THEMES["Shadow Default"];
+  document.documentElement.style.setProperty("--bgSolid", t.bgSolid);
+  document.documentElement.style.setProperty("--bgTop", t.bgTop);
+  document.documentElement.style.setProperty("--bgA", t.bgA);
+  document.documentElement.style.setProperty("--bgB", t.bgB);
+  document.documentElement.style.setProperty("--bgC", t.bgC);
+}
+
 /* ========= Render ========= */
 function render(){
-  // rank aura reset
   document.body.classList.remove("rank-S","rank-SS","rank-SSS");
 
   UI.dayNum.textContent = dayNumberToday();
@@ -749,6 +995,9 @@ function render(){
   UI.todayStatus.innerHTML = t
     ? `<span class="ok">Logged today:</span> ${t.kind} (+${t.xp} XP)`
     : `<span class="warn">Not logged today.</span> Even Ritual counts.`;
+
+  const restDays = countRestDays();
+  if(UI.restDaysPill) UI.restDaysPill.textContent = `Rest Days: ${restDays}`;
 
   renderLog();
   renderCharts();
