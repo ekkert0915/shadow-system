@@ -246,8 +246,8 @@
       <div class="title">
         <h1>🩸 SHADOW SYSTEM</h1>
         <div class="sub">
-          Unlimited days • Sunday start • Editable templates + auto-scaling by rank<br>
-          Rest days counted from your plan • Swimming = Active Recovery
+          Unlimited days • Sunday start • Templates + auto-scaling by rank<br>
+          Skill Tree unlocks by Rank • Swim on rest days = Active Recovery
         </div>
       </div>
 
@@ -295,8 +295,7 @@
       </div>
 
       <div class="small" style="margin-top:8px">
-        Auto-scaling tip: use placeholders like <b>{PUSH}</b>, <b>{SQUAT}</b>, <b>{SETS}</b>, <b>{PLANK}</b>.
-        The SYSTEM fills them based on your rank.
+        Use placeholders like <b>{PUSH}</b>, <b>{SQUAT}</b>, <b>{SETS}</b>, <b>{PLANK}</b>, <b>{PUSH_VAR}</b>. The SYSTEM fills them based on Rank.
       </div>
     </section>
 
@@ -310,7 +309,7 @@
       </div>
       <div class="row">
         <button class="btn-undo" onclick="saveStatsOnly()">Save Stats</button>
-        <div class="small">Stats save even without a workout log.</div>
+        <div class="small">These stats power the graphs. They do NOT unlock skills (skills unlock by Rank/XP).</div>
       </div>
     </section>
 
@@ -346,7 +345,17 @@
       </div>
 
       <div class="small" style="margin-top:8px;">
-        Swimming on rest days: keep it easy/moderate (active recovery). Boss-level sprints belong on training days.
+        Rest days: keep swimming easy/moderate. Hard sprint sets = training day, not rest day.
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Skill Tree</h2>
+      <div class="small">Unlocks automatically as your Rank increases.</div>
+      <div style="height:10px"></div>
+      <div id="skillTree" style="display:grid; gap:10px; grid-template-columns: repeat(2, minmax(240px, 1fr));"></div>
+      <div class="small" style="margin-top:10px;">
+        Templates can use: <b>{PUSH_VAR}</b>, <b>{ROW_VAR}</b>, <b>{SQUAT_VAR}</b>, <b>{CORE_VAR}</b>
       </div>
     </section>
 
@@ -375,8 +384,7 @@
         <div style="grid-column: 1 / -1;">
           <label>What counts as a Rest Day?</label>
           <div class="small">
-            Any day whose workout text contains <b>REST</b> or <b>RECOVERY</b> will be counted as a rest day.
-            (So you can customize freely.)
+            Any day whose template contains <b>REST</b> or <b>RECOVERY</b> counts as a rest day.
           </div>
         </div>
       </div>
@@ -385,17 +393,13 @@
         <button class="btn-full" onclick="saveSettings()">Save Settings</button>
         <button class="btn-undo" onclick="togglePanel('settingsPanel')">Close</button>
       </div>
-
-      <div class="small" style="margin-top:8px;">
-        If icons don’t update, bump the cache name in <b>service-worker.js</b>.
-      </div>
     </section>
 
     <section class="card hidden" id="customPanel">
       <h2>Customize Your Week (Sunday Start)</h2>
       <div class="small">
-        These are <b>templates</b>. Use placeholders like <b>{PUSH}</b>, <b>{SQUAT}</b>, <b>{SETS}</b>, <b>{PLANK}</b>.
-        The SYSTEM scales them with your rank.
+        These are templates. Use placeholders like <b>{PUSH}</b>, <b>{SQUAT}</b>, <b>{SETS}</b>, <b>{PLANK}</b>, <b>{PUSH_VAR}</b>.
+        If you remove placeholders, it stops scaling.
       </div>
 
       <div class="dayGrid" style="margin-top:10px">
@@ -415,8 +419,9 @@
 
       <div class="small" style="margin-top:8px">
         Placeholder cheatsheet:
-        <b>{SETS}</b>, <b>{PUSH}</b>, <b>{PUSH_VAR}</b>, <b>{ROW}</b>, <b>{SQUAT}</b>, <b>{HINGE}</b>,
-        <b>{PLANK}</b>, <b>{HIIT_ROUNDS}</b>, <b>{HIIT_WORK}</b>, <b>{HIIT_REST}</b>
+        <b>{SETS}</b>, <b>{SETS_MINUS1}</b>, <b>{PUSH}</b>, <b>{ROW}</b>, <b>{SQUAT}</b>, <b>{HINGE}</b>, <b>{PLANK}</b>,
+        <b>{PULL_NEG}</b>, <b>{HANG}</b>, <b>{ROUNDS}</b>,
+        <b>{PUSH_VAR}</b>, <b>{ROW_VAR}</b>, <b>{SQUAT_VAR}</b>, <b>{CORE_VAR}</b>
       </div>
     </section>
   </div>
@@ -469,9 +474,9 @@
 
 <script>
 /* ========= Storage keys ========= */
-const KEY_STATE = "shadow_scaling_state_v1";
-const KEY_WORK  = "shadow_scaling_workouts_v1";
-const KEY_SET   = "shadow_scaling_settings_v1";
+const KEY_STATE = "shadow_skill_state_v1";
+const KEY_WORK  = "shadow_skill_workouts_v1";
+const KEY_SET   = "shadow_skill_settings_v1";
 
 /* ========= XP values ========= */
 const XP = { FULL: 100, MINIMUM: 40, CONDITIONING: 120 };
@@ -521,22 +526,28 @@ const QUOTES = [
   "System: A boss fight reveals who you are."
 ];
 
-/* ========= Default workout templates (Sunday start) =========
-   These scale automatically using placeholders.
-*/
+/* ========= Settings load ========= */
+const settings = load(KEY_SET) ?? { themeName: "Shadow Default", difficulty: "hard" };
+
+/* ========= Rank ladder pick ========= */
+function currentRanks(){
+  return (settings.difficulty === "normal") ? RANKS_NORMAL : RANKS_HARD;
+}
+
+/* ========= Default workout templates (Sunday start) ========= */
 const DEFAULT_WORKOUTS = [
 `SUNDAY — PUSH (SYSTEM)
 • {PUSH_VAR} {PUSH} reps × {SETS} sets
 • Pike Push-ups {PUSH} reps × {SETS_MINUS1} sets
 • Chair Dips {PUSH} reps × {SETS_MINUS1} sets
-• Plank {PLANK} sec × 2`,
+• {CORE_VAR} {PLANK} sec × 2`,
 `MONDAY — PULL (SYSTEM)
-• Rows {ROW} reps × {SETS} sets
+• {ROW_VAR} {ROW} reps × {SETS} sets
 • Pull Negatives {PULL_NEG} reps × {SETS_MINUS1} sets
 • Dead Hang {HANG} sec × 2
 • Hollow Hold {PLANK} sec × 1`,
 `TUESDAY — LEGS (SYSTEM)
-• Squats {SQUAT} reps × {SETS} sets
+• {SQUAT_VAR} {SQUAT} reps × {SETS} sets
 • Split Squats {SQUAT_MINUS4} reps/side × {SETS_MINUS1} sets
 • Hinge (RDL) {HINGE} reps × {SETS_MINUS1} sets
 • Calf Raises {SQUAT} reps × 2`,
@@ -547,26 +558,18 @@ const DEFAULT_WORKOUTS = [
 `THURSDAY — FULL BODY (SYSTEM)
 (Repeat {ROUNDS} rounds)
 • {PUSH_VAR} {PUSH} reps
-• Rows {ROW} reps
-• Squats {SQUAT} reps
-• Plank {PLANK} sec`,
+• {ROW_VAR} {ROW} reps
+• {SQUAT_VAR} {SQUAT} reps
+• {CORE_VAR} {PLANK} sec`,
 `FRIDAY — WEAK POINTS (SYSTEM)
 • Push practice: {PUSH_VAR} {PUSH} reps × {SETS_MINUS1} sets
-• Row practice: {ROW} reps × {SETS_MINUS1} sets
-• Core: Plank {PLANK} sec × 2
+• Pull practice: {ROW_VAR} {ROW} reps × {SETS_MINUS1} sets
+• Core: {CORE_VAR} {PLANK} sec × 2
 • Mobility 10 min`,
 `SATURDAY — RECOVERY (REST)
 • Swim 20–45 min (easy/moderate) OR Walk 30 min
 • Stretch 10 min`
 ];
-
-/* ========= Settings load ========= */
-const settings = load(KEY_SET) ?? { themeName: "Shadow Default", difficulty: "hard" };
-
-/* ========= Rank ladder pick ========= */
-function currentRanks(){
-  return (settings.difficulty === "normal") ? RANKS_NORMAL : RANKS_HARD;
-}
 
 /* ========= Load state ========= */
 const state = load(KEY_STATE) ?? { startISO: isoDate(new Date()), xp: 0, logs: [] };
@@ -666,16 +669,125 @@ function rankIndex(name){
   return Math.max(0, order.indexOf(name));
 }
 
-/* ========= Auto-scaling (SYSTEM) =========
-   You can customize workouts freely, but if you use placeholders
-   like {PUSH} or {SETS}, the app scales them based on your rank.
-*/
+/* ========= Skill Unlocks (unlock by Rank/XP) ========= */
+const SKILLS = {
+  PUSH: [
+    { at: 0, name: "Incline Push-ups" },
+    { at: 2, name: "Knee Push-ups" },
+    { at: 3, name: "Standard Push-ups" },
+    { at: 4, name: "Decline Push-ups" },
+    { at: 5, name: "Diamond Push-ups" },
+    { at: 6, name: "Archer Push-ups" },
+    { at: 7, name: "One-arm Progression" }
+  ],
+  ROW: [
+    { at: 0, name: "Backpack Rows" },
+    { at: 2, name: "Table Rows / Door Rows" },
+    { at: 4, name: "Hard Rows (slow tempo)" },
+    { at: 6, name: "Towel Rows / Isometric Holds" }
+  ],
+  SQUAT: [
+    { at: 0, name: "Bodyweight Squats" },
+    { at: 2, name: "Pause Squats (2 sec)" },
+    { at: 3, name: "Bulgarian Split Squats" },
+    { at: 5, name: "Jump Squats (controlled)" },
+    { at: 6, name: "Pistol Progression" }
+  ],
+  CORE: [
+    { at: 0, name: "Plank" },
+    { at: 2, name: "Hollow Hold" },
+    { at: 4, name: "Hanging Knee Raises" },
+    { at: 6, name: "Toes-to-Bar Progression" }
+  ]
+};
+
+function currentSkill(rankName, groupKey){
+  const idx = rankIndex(rankName);
+  const list = SKILLS[groupKey].filter(s => s.at <= idx);
+  return list[list.length - 1]?.name || "Unknown";
+}
+
+function renderSkillTree(){
+  const host = document.getElementById("skillTree");
+  if(!host) return;
+
+  const rankName = getRankInfo(state.xp).current.name;
+  const idx = rankIndex(rankName);
+  const rankNames = ["E","D","C","B","A","S","SS","SSS"];
+
+  const groups = [
+    { key:"PUSH", title:"Push Skills" },
+    { key:"ROW", title:"Pull Skills" },
+    { key:"SQUAT", title:"Leg Skills" },
+    { key:"CORE", title:"Core Skills" }
+  ];
+
+  host.innerHTML = "";
+
+  for(const g of groups){
+    const box = document.createElement("div");
+    box.style.border = "1px solid rgba(255,255,255,.10)";
+    box.style.borderRadius = "14px";
+    box.style.background = "rgba(0,0,0,.18)";
+    box.style.padding = "10px";
+
+    const title = document.createElement("div");
+    title.style.fontWeight = "900";
+    title.style.letterSpacing = ".6px";
+    title.style.textTransform = "uppercase";
+    title.style.marginBottom = "8px";
+    title.textContent = g.title;
+
+    const current = document.createElement("div");
+    current.className = "small";
+    current.innerHTML = `Current: <b>${currentSkill(rankName, g.key)}</b>`;
+
+    const list = document.createElement("div");
+    list.style.marginTop = "10px";
+    list.style.display = "grid";
+    list.style.gap = "6px";
+
+    for(const s of SKILLS[g.key]){
+      const item = document.createElement("div");
+      const unlocked = s.at <= idx;
+      item.style.display = "flex";
+      item.style.justifyContent = "space-between";
+      item.style.alignItems = "center";
+      item.style.padding = "8px 10px";
+      item.style.borderRadius = "12px";
+      item.style.border = "1px solid rgba(255,255,255,.10)";
+      item.style.background = unlocked ? "rgba(0,255,154,.06)" : "rgba(255,255,255,.03)";
+      item.style.color = unlocked ? "rgba(233,233,255,.95)" : "rgba(167,167,217,.70)";
+
+      const left = document.createElement("span");
+      left.textContent = s.name;
+
+      const right = document.createElement("span");
+      right.style.fontSize = "11px";
+      right.style.padding = "4px 8px";
+      right.style.borderRadius = "999px";
+      right.style.border = "1px solid rgba(255,255,255,.10)";
+      right.textContent = unlocked ? "UNLOCKED" : `LOCKED (Rank ${rankNames[s.at]})`;
+
+      item.appendChild(left);
+      item.appendChild(right);
+      list.appendChild(item);
+    }
+
+    box.appendChild(title);
+    box.appendChild(current);
+    box.appendChild(list);
+    host.appendChild(box);
+  }
+}
+
+/* ========= Auto-scaling numbers (by Rank) ========= */
 function scalingForRank(rankName){
   const i = rankIndex(rankName);
-
   const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-  const sets = clamp(3 + Math.floor(i/2), 3, 6);        // E=3, D=3, C=4, B=4, A=5, S=5, SS=6, SSS=6
-  const rounds = clamp(3 + Math.floor(i/3), 3, 6);      // for circuits
+
+  const sets = clamp(3 + Math.floor(i/2), 3, 6);
+  const rounds = clamp(3 + Math.floor(i/3), 3, 6);
 
   const push = clamp(6 + i*2, 6, 25);
   const row  = clamp(8 + i*2, 8, 28);
@@ -685,21 +797,6 @@ function scalingForRank(rankName){
   const plank = clamp(25 + i*10, 25, 120);
   const hang  = clamp(20 + i*8, 20, 90);
   const pullNeg = clamp(3 + Math.floor(i/1.5), 3, 10);
-
-  const hiitRounds = clamp(6 + Math.floor(i/1.5), 6, 14);
-  const hiitWork = clamp(20 + i*2, 20, 40);
-  const hiitRest = clamp(40 - i*3, 15, 40);
-
-  const pushVar = (() => {
-    if(i <= 0) return "Incline Push-ups";
-    if(i === 1) return "Incline Push-ups";
-    if(i === 2) return "Push-ups (knees ok)";
-    if(i === 3) return "Push-ups";
-    if(i === 4) return "Decline Push-ups";
-    if(i === 5) return "Diamond Push-ups";
-    if(i === 6) return "Archer Push-ups";
-    return "One-arm Progression";
-  })();
 
   return {
     SETS: sets,
@@ -715,11 +812,10 @@ function scalingForRank(rankName){
     HANG: hang,
     PULL_NEG: pullNeg,
 
-    HIIT_ROUNDS: hiitRounds,
-    HIIT_WORK: hiitWork,
-    HIIT_REST: hiitRest,
-
-    PUSH_VAR: pushVar
+    PUSH_VAR: currentSkill(rankName, "PUSH"),
+    ROW_VAR: currentSkill(rankName, "ROW"),
+    SQUAT_VAR: currentSkill(rankName, "SQUAT"),
+    CORE_VAR: currentSkill(rankName, "CORE")
   };
 }
 
@@ -727,12 +823,12 @@ function applyPlaceholders(template, rankName){
   const s = scalingForRank(rankName);
   return template.replace(/\{([A-Z_]+)\}/g, (m, key) => {
     if(key in s) return String(s[key]);
-    return m; // unknown placeholder stays
+    return m;
   });
 }
 
-/* ========= Sunday start highlight ========= */
-function todayIndexSundayStart(){ return new Date().getDay(); } // 0=Sun..6=Sat
+/* ========= Sunday start ========= */
+function todayIndexSundayStart(){ return new Date().getDay(); }
 function setTodayWorkout(){
   const idx = todayIndexSundayStart();
   const names = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
@@ -740,9 +836,7 @@ function setTodayWorkout(){
 
   const rankName = getRankInfo(state.xp).current.name;
   const template = workouts[idx] || "No workout set for today.";
-  const rendered = applyPlaceholders(template, rankName);
-
-  UI.todayWorkoutText.textContent = rendered;
+  UI.todayWorkoutText.textContent = applyPlaceholders(template, rankName);
 }
 
 /* ========= Rest days count ========= */
@@ -848,10 +942,7 @@ window.logWorkout = function(kind){
   render();
 
   if(afterRank !== beforeRank){
-    showSystem(
-      "Rank Up",
-      `You have awakened greater power.\nRank: ${beforeRank} → ${afterRank}`
-    );
+    showSystem("Rank Up", `You have awakened greater power.\nRank: ${beforeRank} → ${afterRank}`);
   }
 };
 
@@ -926,7 +1017,6 @@ window.restoreWorkoutDefaults = function(){
 
 /* ========= Settings ========= */
 function populateSettingsUI(){
-  // Theme select
   if(UI.themeSelect){
     UI.themeSelect.innerHTML = "";
     Object.keys(THEMES).forEach(name => {
@@ -937,26 +1027,18 @@ function populateSettingsUI(){
     });
     UI.themeSelect.value = settings.themeName || "Shadow Default";
   }
-
-  // Difficulty select
   if(UI.difficultySelect){
     UI.difficultySelect.value = settings.difficulty || "hard";
   }
 }
-
 window.saveSettings = function(){
-  const themeName = UI.themeSelect?.value || "Shadow Default";
-  const difficulty = UI.difficultySelect?.value || "hard";
-
-  settings.themeName = themeName;
-  settings.difficulty = difficulty;
-
+  settings.themeName = UI.themeSelect?.value || "Shadow Default";
+  settings.difficulty = UI.difficultySelect?.value || "hard";
   save(KEY_SET, settings);
-  applyTheme(themeName);
+  applyTheme(settings.themeName);
   toast("Settings saved.");
   render();
 };
-
 function applyTheme(themeName){
   const t = THEMES[themeName] || THEMES["Shadow Default"];
   document.documentElement.style.setProperty("--bgSolid", t.bgSolid);
@@ -1004,6 +1086,7 @@ function render(){
   setTodayWorkout();
   setDailyQuote();
   renderArc();
+  renderSkillTree();
 }
 
 function renderLog(){
