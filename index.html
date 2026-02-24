@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Shadow System</title>
 
-  <!-- PWA -->
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#070712">
 
@@ -23,7 +22,6 @@
       --shadow: 0 18px 55px rgba(0,0,0,.65);
       --glow: 0 0 18px rgba(124,92,255,.22), 0 0 26px rgba(0,255,154,.10);
 
-      /* Theme-controlled background layers */
       --bgSolid:#070712;
       --bgA: rgba(124,92,255,.18);
       --bgB: rgba(74,163,255,.16);
@@ -70,7 +68,7 @@
     }
     .title{ position:relative; z-index:1; }
     .title h1{ margin:0; letter-spacing:1px; text-transform:uppercase; font-size:20px; }
-    .sub{ margin-top:6px; color:var(--muted); font-size:12px; line-height:1.3; }
+    .sub{ margin-top:6px; color:var(--muted); font-size:12px; line-height:1.35; }
 
     .badges{ position:relative; z-index:1; display:flex; gap:10px; flex-wrap:wrap; margin-left:auto; }
     .badge{
@@ -214,7 +212,7 @@
     }
     .toast.show{ opacity:1; transform:translateX(-50%) translateY(-4px); }
 
-    /* ===== Solo Leveling aura by rank ===== */
+    /* aura by rank */
     body.rank-S  { filter: drop-shadow(0 0 10px rgba(74,163,255,.12)); }
     body.rank-SS { filter: drop-shadow(0 0 16px rgba(124,92,255,.16)); }
     body.rank-SSS{ filter: drop-shadow(0 0 22px rgba(0,255,154,.14)); }
@@ -237,6 +235,40 @@
       font-size:11px;
       color: rgba(233,233,255,.90);
     }
+
+    /* Checklist styling */
+    .checkWrap{
+      border:1px solid var(--line);
+      background: rgba(0,0,0,.16);
+      border-radius:14px;
+      padding:10px;
+      margin-top:10px;
+    }
+    .checkItem{
+      display:flex;
+      gap:10px;
+      align-items:flex-start;
+      padding:8px 8px;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.02);
+    }
+    .checkItem.done{
+      background: rgba(0,255,154,.06);
+      border-color: rgba(0,255,154,.18);
+      opacity:.95;
+    }
+    .checkItem input{ width:auto; margin-top:2px; }
+    .checkText{ line-height:1.3; font-size:13px; color: rgba(233,233,255,.92); }
+    .checkMeta{
+      font-size:11px;
+      color: var(--muted);
+      margin-top:8px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
   </style>
 </head>
 
@@ -246,8 +278,8 @@
       <div class="title">
         <h1>🩸 SHADOW SYSTEM</h1>
         <div class="sub">
-          Unlimited days • Sunday start • Templates + auto-scaling by rank<br>
-          Skill Tree unlocks by Rank • Swim on rest days = Active Recovery
+          Unlimited days • Sunday start • Editable templates + auto-scaling by rank<br>
+          Skill Tree unlocks • Checklist + XP bonus • Admin restore days
         </div>
       </div>
 
@@ -273,12 +305,31 @@
 
       <div class="row" style="justify-content:space-between;">
         <div class="small" id="todayWorkoutName"></div>
-        <div class="pill">
-          <span id="restDaysPill">Rest Days: 2</span>
-        </div>
+        <div class="pill"><span id="restDaysPill">Rest Days: 2</span></div>
       </div>
 
       <pre class="workoutBox" id="todayWorkoutText"></pre>
+
+      <div class="checkWrap" id="checkWrap">
+        <div style="display:flex; justify-content:space-between; gap:10px; align-items:center; flex-wrap:wrap;">
+          <div style="font-weight:900; letter-spacing:.6px; text-transform:uppercase; font-size:12px; color: rgba(233,233,255,.92);">
+            Checklist
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn-undo" onclick="markAllChecklist(true)">Mark All</button>
+            <button class="btn-undo" onclick="markAllChecklist(false)">Clear</button>
+          </div>
+        </div>
+        <div style="height:10px"></div>
+        <div id="todayChecklist" style="display:grid; gap:8px;"></div>
+
+        <div class="checkMeta">
+          <span id="checkProgress">0 / 0 done</span>
+          <span id="checkBonusLine" class="small">Bonus: Complete 80%+ for +10 XP • 100% for +20 XP</span>
+          <button class="btn-undo" onclick="claimChecklistBonus()">Claim Bonus</button>
+        </div>
+      </div>
+
       <div class="small" id="todayStatus">Not logged today.</div>
 
       <div class="btns">
@@ -295,7 +346,7 @@
       </div>
 
       <div class="small" style="margin-top:8px">
-        Use placeholders like <b>{PUSH}</b>, <b>{SQUAT}</b>, <b>{SETS}</b>, <b>{PLANK}</b>, <b>{PUSH_VAR}</b>. The SYSTEM fills them based on Rank.
+        Placeholders: <b>{PUSH}</b>, <b>{SQUAT}</b>, <b>{SETS}</b>, <b>{PLANK}</b> • Skills: <b>{PUSH_VAR}</b>, <b>{ROW_VAR}</b>, <b>{SQUAT_VAR}</b>, <b>{CORE_VAR}</b>.
       </div>
     </section>
 
@@ -309,7 +360,7 @@
       </div>
       <div class="row">
         <button class="btn-undo" onclick="saveStatsOnly()">Save Stats</button>
-        <div class="small">These stats power the graphs. They do NOT unlock skills (skills unlock by Rank/XP).</div>
+        <div class="small">Stats save even without a workout log.</div>
       </div>
     </section>
 
@@ -327,8 +378,8 @@
       <div class="small" id="dailyQuote">...</div>
 
       <div style="height:12px"></div>
-
       <div class="small">90-day Arc</div>
+
       <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:8px;">
         <div style="flex:1; min-width:240px; border:1px solid rgba(255,255,255,.10); border-radius:14px; background: rgba(0,0,0,.18); padding:10px;">
           <div style="display:flex; justify-content:space-between; gap:10px; font-size:12px; color:rgba(167,167,217,.95);">
@@ -345,7 +396,7 @@
       </div>
 
       <div class="small" style="margin-top:8px;">
-        Rest days: keep swimming easy/moderate. Hard sprint sets = training day, not rest day.
+        Swimming on rest days = active recovery (easy/moderate).
       </div>
     </section>
 
@@ -354,9 +405,6 @@
       <div class="small">Unlocks automatically as your Rank increases.</div>
       <div style="height:10px"></div>
       <div id="skillTree" style="display:grid; gap:10px; grid-template-columns: repeat(2, minmax(240px, 1fr));"></div>
-      <div class="small" style="margin-top:10px;">
-        Templates can use: <b>{PUSH_VAR}</b>, <b>{ROW_VAR}</b>, <b>{SQUAT_VAR}</b>, <b>{CORE_VAR}</b>
-      </div>
     </section>
 
     <section class="card">
@@ -364,15 +412,45 @@
       <ul class="log" id="log"></ul>
     </section>
 
+    <section class="card">
+      <h2>Admin / Fix</h2>
+      <div class="small">Missed a day? Add it back here to restore XP + streak + charts.</div>
+
+      <div class="grid" style="margin-top:10px;">
+        <div>
+          <label>Date to add</label>
+          <input id="fixDate" type="date">
+        </div>
+        <div>
+          <label>Type</label>
+          <select id="fixType">
+            <option value="MINIMUM">Ritual (+40)</option>
+            <option value="FULL">Ascension (+100)</option>
+            <option value="CONDITIONING">Boss Fight (+120)</option>
+          </select>
+        </div>
+        <div>
+          <label>Optional note</label>
+          <input id="fixNote" type="text" placeholder="ex: swim recovery, travel day">
+        </div>
+        <div style="display:flex; align-items:flex-end;">
+          <button class="btn-full" style="width:100%;" onclick="addMissedDay()">Add Day</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <button class="btn-undo" onclick="recalcXPFromLogs()">Recalculate XP from Logs</button>
+        <div class="small">If XP looks wrong, this rebuilds XP from your logs.</div>
+      </div>
+    </section>
+
     <section class="card hidden" id="settingsPanel">
       <h2>Settings</h2>
-
       <div class="grid">
         <div>
           <label>Theme / Background</label>
           <select id="themeSelect"></select>
         </div>
-
         <div>
           <label>Rank Difficulty</label>
           <select id="difficultySelect">
@@ -380,12 +458,9 @@
             <option value="normal">Normal</option>
           </select>
         </div>
-
         <div style="grid-column: 1 / -1;">
-          <label>What counts as a Rest Day?</label>
-          <div class="small">
-            Any day whose template contains <b>REST</b> or <b>RECOVERY</b> counts as a rest day.
-          </div>
+          <label>Rest day rule</label>
+          <div class="small">Any day containing <b>REST</b> or <b>RECOVERY</b> counts as rest.</div>
         </div>
       </div>
 
@@ -397,10 +472,7 @@
 
     <section class="card hidden" id="customPanel">
       <h2>Customize Your Week (Sunday Start)</h2>
-      <div class="small">
-        These are templates. Use placeholders like <b>{PUSH}</b>, <b>{SQUAT}</b>, <b>{SETS}</b>, <b>{PLANK}</b>, <b>{PUSH_VAR}</b>.
-        If you remove placeholders, it stops scaling.
-      </div>
+      <div class="small">Edit templates. Use placeholders like {PUSH} or {PUSH_VAR}.</div>
 
       <div class="dayGrid" style="margin-top:10px">
         <div class="dayCard"><div class="dayTitle">Sunday</div><textarea id="w0" rows="9"></textarea></div>
@@ -416,19 +488,11 @@
         <button class="btn-full" onclick="saveWorkouts()">Save Workouts</button>
         <button class="btn-undo" onclick="restoreWorkoutDefaults()">Restore Defaults</button>
       </div>
-
-      <div class="small" style="margin-top:8px">
-        Placeholder cheatsheet:
-        <b>{SETS}</b>, <b>{SETS_MINUS1}</b>, <b>{PUSH}</b>, <b>{ROW}</b>, <b>{SQUAT}</b>, <b>{HINGE}</b>, <b>{PLANK}</b>,
-        <b>{PULL_NEG}</b>, <b>{HANG}</b>, <b>{ROUNDS}</b>,
-        <b>{PUSH_VAR}</b>, <b>{ROW_VAR}</b>, <b>{SQUAT_VAR}</b>, <b>{CORE_VAR}</b>
-      </div>
     </section>
   </div>
 
   <div class="toast" id="toast">Saved.</div>
 
-  <!-- Solo Leveling "SYSTEM" overlay -->
   <div class="hidden" id="systemOverlay" style="
     position:fixed; inset:0; z-index:9999;
     display:flex; align-items:center; justify-content:center;
@@ -445,66 +509,47 @@
       position:relative;
       overflow:hidden;
     ">
-      <div style="font-weight:900; letter-spacing:2px; text-transform:uppercase; color:rgba(233,233,255,.95); position:relative; z-index:2;">
-        SYSTEM
-      </div>
-      <div id="systemTitle" style="margin-top:8px; font-size:22px; font-weight:900; letter-spacing:1px; position:relative; z-index:2;">
-        Rank Up
-      </div>
-      <div id="systemText" style="margin-top:10px; color:rgba(233,233,255,.85); line-height:1.5; white-space:pre-wrap; position:relative; z-index:2;">
-        You have grown stronger.
-      </div>
-
+      <div style="font-weight:900; letter-spacing:2px; text-transform:uppercase; color:rgba(233,233,255,.95); position:relative; z-index:2;">SYSTEM</div>
+      <div id="systemTitle" style="margin-top:8px; font-size:22px; font-weight:900; letter-spacing:1px; position:relative; z-index:2;">Rank Up</div>
+      <div id="systemText" style="margin-top:10px; color:rgba(233,233,255,.85); line-height:1.5; white-space:pre-wrap; position:relative; z-index:2;">You have grown stronger.</div>
       <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; position:relative; z-index:2;">
         <button class="btn-undo" onclick="hideSystem()">Continue</button>
       </div>
-
       <div style="
         position:absolute; inset:-80px; z-index:1;
         background:
           radial-gradient(circle at 30% 30%, rgba(124,92,255,.22), transparent 55%),
           radial-gradient(circle at 80% 25%, rgba(74,163,255,.18), transparent 60%),
           radial-gradient(circle at 55% 80%, rgba(0,255,154,.10), transparent 55%);
-        opacity:.85;
-        pointer-events:none;
-        transform: rotate(-6deg);
+        opacity:.85; pointer-events:none; transform: rotate(-6deg);
       "></div>
     </div>
   </div>
 
 <script>
-/* ========= Storage keys ========= */
-const KEY_STATE = "shadow_skill_state_v1";
-const KEY_WORK  = "shadow_skill_workouts_v1";
-const KEY_SET   = "shadow_skill_settings_v1";
+/* ===== Storage keys ===== */
+const KEY_STATE = "shadow_all_state_v1";
+const KEY_WORK  = "shadow_all_workouts_v1";
+const KEY_SET   = "shadow_all_settings_v1";
 
-/* ========= XP values ========= */
+/* ===== XP ===== */
 const XP = { FULL: 100, MINIMUM: 40, CONDITIONING: 120 };
 
-/* ========= Difficulty ladders ========= */
+/* ===== Ranks ===== */
 const RANKS_NORMAL = [
-  { name: "E",   minXP: 0 },
-  { name: "D",   minXP: 500 },
-  { name: "C",   minXP: 1500 },
-  { name: "B",   minXP: 3000 },
-  { name: "A",   minXP: 6000 },
-  { name: "S",   minXP: 10000 },
-  { name: "SS",  minXP: 15000 },
-  { name: "SSS", minXP: 22000 }
+  { name: "E", minXP: 0 }, { name: "D", minXP: 500 }, { name: "C", minXP: 1500 },
+  { name: "B", minXP: 3000 }, { name: "A", minXP: 6000 }, { name: "S", minXP: 10000 },
+  { name: "SS", minXP: 15000 }, { name: "SSS", minXP: 22000 }
 ];
-
 const RANKS_HARD = [
-  { name: "E",   minXP: 0 },
-  { name: "D",   minXP: 1200 },
-  { name: "C",   minXP: 3500 },
-  { name: "B",   minXP: 7500 },
-  { name: "A",   minXP: 14000 },
-  { name: "S",   minXP: 24000 },
-  { name: "SS",  minXP: 38000 },
-  { name: "SSS", minXP: 55000 }
+  { name: "E", minXP: 0 }, { name: "D", minXP: 1200 }, { name: "C", minXP: 3500 },
+  { name: "B", minXP: 7500 }, { name: "A", minXP: 14000 }, { name: "S", minXP: 24000 },
+  { name: "SS", minXP: 38000 }, { name: "SSS", minXP: 55000 }
 ];
+function rankOrder(){ return ["E","D","C","B","A","S","SS","SSS"]; }
+function rankIndex(name){ return Math.max(0, rankOrder().indexOf(name)); }
 
-/* ========= Themes ========= */
+/* ===== Themes ===== */
 const THEMES = {
   "Shadow Default": { bgSolid:"#070712", bgTop:"#05050d", bgA:"rgba(124,92,255,.18)", bgB:"rgba(74,163,255,.16)", bgC:"rgba(0,255,154,.10)" },
   "Abyss Blue":     { bgSolid:"#040a14", bgTop:"#03070f", bgA:"rgba(74,163,255,.20)", bgB:"rgba(124,92,255,.10)", bgC:"rgba(0,255,154,.06)" },
@@ -512,7 +557,7 @@ const THEMES = {
   "Red Eclipse":    { bgSolid:"#12020a", bgTop:"#070106", bgA:"rgba(255,91,214,.10)", bgB:"rgba(255,80,80,.12)", bgC:"rgba(124,92,255,.10)" }
 };
 
-/* ========= Arcs & Quotes ========= */
+/* ===== Arc + Quotes ===== */
 const ARC_LEN = 90;
 const QUOTES = [
   "System: No zero days. Even a ritual counts.",
@@ -526,15 +571,47 @@ const QUOTES = [
   "System: A boss fight reveals who you are."
 ];
 
-/* ========= Settings load ========= */
-const settings = load(KEY_SET) ?? { themeName: "Shadow Default", difficulty: "hard" };
-
-/* ========= Rank ladder pick ========= */
-function currentRanks(){
-  return (settings.difficulty === "normal") ? RANKS_NORMAL : RANKS_HARD;
+/* ===== Skills ===== */
+const SKILLS = {
+  PUSH: [
+    { at: 0, name: "Incline Push-ups" },
+    { at: 2, name: "Knee Push-ups" },
+    { at: 3, name: "Standard Push-ups" },
+    { at: 4, name: "Decline Push-ups" },
+    { at: 5, name: "Diamond Push-ups" },
+    { at: 6, name: "Archer Push-ups" },
+    { at: 7, name: "One-arm Progression" }
+  ],
+  ROW: [
+    { at: 0, name: "Backpack Rows" },
+    { at: 2, name: "Table Rows / Door Rows" },
+    { at: 4, name: "Slow Tempo Rows" },
+    { at: 6, name: "Isometric Row Holds" }
+  ],
+  SQUAT: [
+    { at: 0, name: "Bodyweight Squats" },
+    { at: 2, name: "Pause Squats (2 sec)" },
+    { at: 3, name: "Bulgarian Split Squats" },
+    { at: 5, name: "Jump Squats (controlled)" },
+    { at: 6, name: "Pistol Progression" }
+  ],
+  CORE: [
+    { at: 0, name: "Plank" },
+    { at: 2, name: "Hollow Hold" },
+    { at: 4, name: "Hanging Knee Raises" },
+    { at: 6, name: "Toes-to-Bar Progression" }
+  ]
+};
+function unlockedList(rankName, groupKey){
+  const idx = rankIndex(rankName);
+  return SKILLS[groupKey].filter(s => s.at <= idx);
+}
+function currentSkill(rankName, groupKey){
+  const list = unlockedList(rankName, groupKey);
+  return list[list.length - 1]?.name || "Unknown";
 }
 
-/* ========= Default workout templates (Sunday start) ========= */
+/* ===== Default workouts ===== */
 const DEFAULT_WORKOUTS = [
 `SUNDAY — PUSH (SYSTEM)
 • {PUSH_VAR} {PUSH} reps × {SETS} sets
@@ -545,7 +622,7 @@ const DEFAULT_WORKOUTS = [
 • {ROW_VAR} {ROW} reps × {SETS} sets
 • Pull Negatives {PULL_NEG} reps × {SETS_MINUS1} sets
 • Dead Hang {HANG} sec × 2
-• Hollow Hold {PLANK} sec × 1`,
+• {CORE_VAR} {PLANK} sec × 1`,
 `TUESDAY — LEGS (SYSTEM)
 • {SQUAT_VAR} {SQUAT} reps × {SETS} sets
 • Split Squats {SQUAT_MINUS4} reps/side × {SETS_MINUS1} sets
@@ -571,11 +648,15 @@ const DEFAULT_WORKOUTS = [
 • Stretch 10 min`
 ];
 
-/* ========= Load state ========= */
-const state = load(KEY_STATE) ?? { startISO: isoDate(new Date()), xp: 0, logs: [] };
+/* ===== Load settings + state ===== */
+const settings = load(KEY_SET) ?? { themeName: "Shadow Default", difficulty: "hard" };
+function currentRanks(){ return (settings.difficulty === "normal") ? RANKS_NORMAL : RANKS_HARD; }
+
+const state = load(KEY_STATE) ?? { startISO: isoDate(new Date()), xp: 0, logs: [], checks: {} };
+if(!state.checks) state.checks = {};
 let workouts = load(KEY_WORK) ?? [...DEFAULT_WORKOUTS];
 
-/* ========= UI refs ========= */
+/* ===== UI ===== */
 const UI = {
   dayNum: document.getElementById("dayNum"),
   xp: document.getElementById("xp"),
@@ -591,21 +672,27 @@ const UI = {
   inSquat: document.getElementById("inSquat"),
   inRow: document.getElementById("inRow"),
   inWeight: document.getElementById("inWeight"),
-  strengthChart: document.getElementById("strengthChart"),
-  weightChart: document.getElementById("weightChart"),
   toast: document.getElementById("toast"),
   themeSelect: document.getElementById("themeSelect"),
-  difficultySelect: document.getElementById("difficultySelect")
+  difficultySelect: document.getElementById("difficultySelect"),
+
+  todayChecklist: document.getElementById("todayChecklist"),
+  checkProgress: document.getElementById("checkProgress"),
+  checkBonusLine: document.getElementById("checkBonusLine"),
+
+  fixDate: document.getElementById("fixDate"),
+  fixType: document.getElementById("fixType"),
+  fixNote: document.getElementById("fixNote"),
 };
 
-/* ========= Init ========= */
+/* ===== Init ===== */
 populateSettingsUI();
 applyTheme(settings.themeName);
 hydrateWorkoutEditor();
 render();
 registerSW();
 
-/* ========= Helpers ========= */
+/* ===== Helpers ===== */
 function isoDate(d){
   const y = d.getFullYear();
   const m = String(d.getMonth()+1).padStart(2,"0");
@@ -620,14 +707,9 @@ function dayNumberToday(){
   const diff = daysBetween(state.startISO, isoDate(new Date()));
   return Math.max(1, diff + 1);
 }
-function hasTodayLog(){
-  const t = isoDate(new Date());
-  return state.logs.some(l => l.iso === t);
-}
-function todayLog(){
-  const t = isoDate(new Date());
-  return state.logs.find(l => l.iso === t) ?? null;
-}
+function todayISO(){ return isoDate(new Date()); }
+function hasTodayLog(){ return state.logs.some(l => l.iso === todayISO()); }
+function todayLog(){ return state.logs.find(l => l.iso === todayISO()) ?? null; }
 function computeStreak(){
   if(state.logs.length === 0) return 0;
   const days = [...new Set(state.logs.map(l => l.iso))].sort();
@@ -652,68 +734,219 @@ function readInputs(){
   };
 }
 
-/* ========= Rank logic ========= */
+/* ===== Rank logic ===== */
 function getRankInfo(xp){
-  const RANKS = currentRanks();
-  let current = RANKS[0];
-  for(const r of RANKS){
+  const R = currentRanks();
+  let current = R[0];
+  for(const r of R){
     if(xp >= r.minXP) current = r;
     else break;
   }
-  const idx = RANKS.findIndex(r => r.name === current.name);
-  const next = (idx >= 0 && idx < RANKS.length - 1) ? RANKS[idx + 1] : null;
+  const idx = R.findIndex(r => r.name === current.name);
+  const next = (idx >= 0 && idx < R.length - 1) ? R[idx + 1] : null;
   return { current, next };
 }
-function rankIndex(name){
-  const order = ["E","D","C","B","A","S","SS","SSS"];
-  return Math.max(0, order.indexOf(name));
+
+/* ===== Scaling ===== */
+function scalingForRank(rankName){
+  const i = rankIndex(rankName);
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+
+  const sets = clamp(3 + Math.floor(i/2), 3, 6);
+  const rounds = clamp(3 + Math.floor(i/3), 3, 6);
+
+  const push = clamp(6 + i*2, 6, 25);
+  const row  = clamp(8 + i*2, 8, 28);
+  const squat= clamp(12 + i*3, 12, 40);
+  const hinge= clamp(10 + i*2, 10, 28);
+
+  const plank = clamp(25 + i*10, 25, 120);
+  const hang  = clamp(20 + i*8, 20, 90);
+  const pullNeg = clamp(3 + Math.floor(i/1.5), 3, 10);
+
+  return {
+    SETS: sets,
+    SETS_MINUS1: Math.max(2, sets-1),
+    ROUNDS: rounds,
+    PUSH: push,
+    ROW: row,
+    SQUAT: squat,
+    SQUAT_MINUS4: Math.max(6, squat-4),
+    HINGE: hinge,
+    PLANK: plank,
+    HANG: hang,
+    PULL_NEG: pullNeg,
+    PUSH_VAR: currentSkill(rankName, "PUSH"),
+    ROW_VAR: currentSkill(rankName, "ROW"),
+    SQUAT_VAR: currentSkill(rankName, "SQUAT"),
+    CORE_VAR: currentSkill(rankName, "CORE")
+  };
+}
+function applyPlaceholders(template, rankName){
+  const s = scalingForRank(rankName);
+  return template.replace(/\{([A-Z_]+)\}/g, (m, key) => (key in s ? String(s[key]) : m));
 }
 
-/* ========= Skill Unlocks (unlock by Rank/XP) ========= */
-const SKILLS = {
-  PUSH: [
-    { at: 0, name: "Incline Push-ups" },
-    { at: 2, name: "Knee Push-ups" },
-    { at: 3, name: "Standard Push-ups" },
-    { at: 4, name: "Decline Push-ups" },
-    { at: 5, name: "Diamond Push-ups" },
-    { at: 6, name: "Archer Push-ups" },
-    { at: 7, name: "One-arm Progression" }
-  ],
-  ROW: [
-    { at: 0, name: "Backpack Rows" },
-    { at: 2, name: "Table Rows / Door Rows" },
-    { at: 4, name: "Hard Rows (slow tempo)" },
-    { at: 6, name: "Towel Rows / Isometric Holds" }
-  ],
-  SQUAT: [
-    { at: 0, name: "Bodyweight Squats" },
-    { at: 2, name: "Pause Squats (2 sec)" },
-    { at: 3, name: "Bulgarian Split Squats" },
-    { at: 5, name: "Jump Squats (controlled)" },
-    { at: 6, name: "Pistol Progression" }
-  ],
-  CORE: [
-    { at: 0, name: "Plank" },
-    { at: 2, name: "Hollow Hold" },
-    { at: 4, name: "Hanging Knee Raises" },
-    { at: 6, name: "Toes-to-Bar Progression" }
-  ]
+/* ===== Checklist ===== */
+function extractChecklistItems(renderedText){
+  const lines = (renderedText || "").split("\n").map(l => l.trim()).filter(Boolean);
+  const items = [];
+  for(const l of lines){
+    if(l.startsWith("•")) items.push(l.replace(/^•\s*/, ""));
+    else if(l.startsWith("-")) items.push(l.replace(/^-+\s*/, ""));
+    else if(l.startsWith("*")) items.push(l.replace(/^\*\s*/, ""));
+  }
+  return items;
+}
+function ensureChecklistForDate(iso, items){
+  const existing = state.checks[iso];
+  const same = existing && Array.isArray(existing.items) && Array.isArray(existing.done) &&
+               existing.items.join("||") === items.join("||");
+  if(!same){
+    state.checks[iso] = { items, done: items.map(()=>false), bonusClaimed: false };
+    save(KEY_STATE, state);
+  }
+}
+function checklistStatsForDate(iso){
+  const data = state.checks?.[iso];
+  if(!data || !Array.isArray(data.items) || !Array.isArray(data.done)) return null;
+  const total = data.items.length;
+  const done = data.done.filter(Boolean).length;
+  const pct = total > 0 ? (done/total) : 0;
+  return { total, done, pct, data };
+}
+function checklistBonusForPct(pct){
+  if(pct >= 1) return 20;
+  if(pct >= 0.80) return 10;
+  return 0;
+}
+
+function renderChecklistForToday(renderedText){
+  const iso = todayISO();
+  const items = extractChecklistItems(renderedText);
+
+  if(items.length === 0){
+    UI.todayChecklist.innerHTML = `<div class="small">No checklist items found. Use bullet lines starting with • in your workout template.</div>`;
+    UI.checkProgress.textContent = `0 / 0 done`;
+    if(UI.checkBonusLine) UI.checkBonusLine.textContent = `Bonus: Complete 80%+ for +10 XP • 100% for +20 XP`;
+    return;
+  }
+
+  ensureChecklistForDate(iso, items);
+  const data = state.checks[iso];
+
+  UI.todayChecklist.innerHTML = "";
+  items.forEach((text, idx) => {
+    const row = document.createElement("label");
+    row.className = "checkItem" + (data.done[idx] ? " done" : "");
+    row.style.cursor = "pointer";
+
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = !!data.done[idx];
+    cb.addEventListener("change", () => {
+      data.done[idx] = cb.checked;
+      state.checks[iso] = data;
+      save(KEY_STATE, state);
+      renderChecklistForToday(renderedText);
+    });
+
+    const span = document.createElement("div");
+    span.className = "checkText";
+    span.textContent = text;
+
+    row.appendChild(cb);
+    row.appendChild(span);
+    UI.todayChecklist.appendChild(row);
+  });
+
+  const doneCount = data.done.filter(Boolean).length;
+  UI.checkProgress.textContent = `${doneCount} / ${items.length} done`;
+
+  const pct = items.length ? (doneCount / items.length) : 0;
+  const bonus = checklistBonusForPct(pct);
+  const claimed = !!state.checks[iso]?.bonusClaimed;
+
+  if(UI.checkBonusLine){
+    if(claimed){
+      UI.checkBonusLine.textContent = `Bonus claimed ✅ (+${bonus} XP was awarded)`;
+    } else if(bonus > 0){
+      UI.checkBonusLine.textContent = `Bonus ready: +${bonus} XP (press Claim Bonus)`;
+    } else {
+      UI.checkBonusLine.textContent = `Bonus: Complete 80%+ for +10 XP • 100% for +20 XP`;
+    }
+  }
+}
+
+window.markAllChecklist = function(flag){
+  const iso = todayISO();
+  const data = state.checks[iso];
+  if(!data || !Array.isArray(data.done)) return toast("No checklist yet.");
+  data.done = data.done.map(()=>!!flag);
+  state.checks[iso] = data;
+  save(KEY_STATE, state);
+  setTodayWorkout();
+  toast(flag ? "All marked." : "Cleared.");
 };
 
-function currentSkill(rankName, groupKey){
-  const idx = rankIndex(rankName);
-  const list = SKILLS[groupKey].filter(s => s.at <= idx);
-  return list[list.length - 1]?.name || "Unknown";
+window.claimChecklistBonus = function(){
+  const iso = todayISO();
+  const stats = checklistStatsForDate(iso);
+  if(!stats) return toast("No checklist found for today.");
+
+  const bonus = checklistBonusForPct(stats.pct);
+  if(bonus <= 0) return toast("Not enough completed for a bonus yet.");
+  if(state.checks[iso].bonusClaimed) return toast("Bonus already claimed today.");
+
+  state.xp += bonus;
+  state.checks[iso].bonusClaimed = true;
+
+  state.logs.push({
+    iso,
+    kind: "CHECKLIST BONUS",
+    xp: bonus,
+    note: `${Math.round(stats.pct * 100)}% completed`
+  });
+  state.logs.sort((a,b) => a.iso.localeCompare(b.iso));
+
+  save(KEY_STATE, state);
+  toast(`Bonus claimed (+${bonus} XP)!`);
+  render();
+};
+
+/* ===== Today workout ===== */
+function todayIndexSundayStart(){ return new Date().getDay(); }
+function setTodayWorkout(){
+  const idx = todayIndexSundayStart();
+  const names = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  UI.todayWorkoutName.textContent = `Today is ${names[idx]} — highlighted mission`;
+
+  const rankName = getRankInfo(state.xp).current.name;
+  const template = workouts[idx] || "No workout set for today.";
+  const rendered = applyPlaceholders(template, rankName);
+
+  UI.todayWorkoutText.textContent = rendered;
+  renderChecklistForToday(rendered);
 }
 
+/* ===== Rest days ===== */
+function isRestDayText(t){
+  const u = (t || "").toUpperCase();
+  return u.includes("REST") || u.includes("RECOVERY");
+}
+function countRestDays(){
+  let n = 0;
+  for(const w of workouts) if(isRestDayText(w)) n++;
+  return n;
+}
+
+/* ===== Skill Tree render ===== */
 function renderSkillTree(){
   const host = document.getElementById("skillTree");
   if(!host) return;
 
   const rankName = getRankInfo(state.xp).current.name;
   const idx = rankIndex(rankName);
-  const rankNames = ["E","D","C","B","A","S","SS","SSS"];
 
   const groups = [
     { key:"PUSH", title:"Push Skills" },
@@ -723,7 +956,6 @@ function renderSkillTree(){
   ];
 
   host.innerHTML = "";
-
   for(const g of groups){
     const box = document.createElement("div");
     box.style.border = "1px solid rgba(255,255,255,.10)";
@@ -750,6 +982,7 @@ function renderSkillTree(){
     for(const s of SKILLS[g.key]){
       const item = document.createElement("div");
       const unlocked = s.at <= idx;
+
       item.style.display = "flex";
       item.style.justifyContent = "space-between";
       item.style.alignItems = "center";
@@ -767,7 +1000,7 @@ function renderSkillTree(){
       right.style.padding = "4px 8px";
       right.style.borderRadius = "999px";
       right.style.border = "1px solid rgba(255,255,255,.10)";
-      right.textContent = unlocked ? "UNLOCKED" : `LOCKED (Rank ${rankNames[s.at]})`;
+      right.textContent = unlocked ? "UNLOCKED" : `LOCKED (Rank ${rankOrder()[s.at]})`;
 
       item.appendChild(left);
       item.appendChild(right);
@@ -781,85 +1014,12 @@ function renderSkillTree(){
   }
 }
 
-/* ========= Auto-scaling numbers (by Rank) ========= */
-function scalingForRank(rankName){
-  const i = rankIndex(rankName);
-  const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
-
-  const sets = clamp(3 + Math.floor(i/2), 3, 6);
-  const rounds = clamp(3 + Math.floor(i/3), 3, 6);
-
-  const push = clamp(6 + i*2, 6, 25);
-  const row  = clamp(8 + i*2, 8, 28);
-  const squat= clamp(12 + i*3, 12, 40);
-  const hinge= clamp(10 + i*2, 10, 28);
-
-  const plank = clamp(25 + i*10, 25, 120);
-  const hang  = clamp(20 + i*8, 20, 90);
-  const pullNeg = clamp(3 + Math.floor(i/1.5), 3, 10);
-
-  return {
-    SETS: sets,
-    SETS_MINUS1: Math.max(2, sets-1),
-    ROUNDS: rounds,
-
-    PUSH: push,
-    ROW: row,
-    SQUAT: squat,
-    SQUAT_MINUS4: Math.max(6, squat-4),
-    HINGE: hinge,
-    PLANK: plank,
-    HANG: hang,
-    PULL_NEG: pullNeg,
-
-    PUSH_VAR: currentSkill(rankName, "PUSH"),
-    ROW_VAR: currentSkill(rankName, "ROW"),
-    SQUAT_VAR: currentSkill(rankName, "SQUAT"),
-    CORE_VAR: currentSkill(rankName, "CORE")
-  };
-}
-
-function applyPlaceholders(template, rankName){
-  const s = scalingForRank(rankName);
-  return template.replace(/\{([A-Z_]+)\}/g, (m, key) => {
-    if(key in s) return String(s[key]);
-    return m;
-  });
-}
-
-/* ========= Sunday start ========= */
-function todayIndexSundayStart(){ return new Date().getDay(); }
-function setTodayWorkout(){
-  const idx = todayIndexSundayStart();
-  const names = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-  UI.todayWorkoutName.textContent = `Today is ${names[idx]} — highlighted mission`;
-
-  const rankName = getRankInfo(state.xp).current.name;
-  const template = workouts[idx] || "No workout set for today.";
-  UI.todayWorkoutText.textContent = applyPlaceholders(template, rankName);
-}
-
-/* ========= Rest days count ========= */
-function isRestDayText(t){
-  const u = (t || "").toUpperCase();
-  return u.includes("REST") || u.includes("RECOVERY");
-}
-function countRestDays(){
-  let n = 0;
-  for(const w of workouts){
-    if(isRestDayText(w)) n++;
-  }
-  return n;
-}
-
-/* ========= Quotes & Arcs ========= */
+/* ===== System + Arc + Quote ===== */
 function setDailyQuote(){
-  const today = isoDate(new Date());
+  const t = todayISO();
   let seed = 0;
-  for(const ch of today) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
-  const q = QUOTES[seed % QUOTES.length];
-  const el = document.getElementById("dailyQuote");
-  if(el) el.textContent = q;
+  for(const ch of t) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
+  document.getElementById("dailyQuote").textContent = QUOTES[seed % QUOTES.length];
 }
 function arcInfo(){
   const day = dayNumberToday();
@@ -869,34 +1029,25 @@ function arcInfo(){
 }
 function renderArc(){
   const { arc, arcDay } = arcInfo();
-  const arcLabel = document.getElementById("arcLabel");
-  const arcDayLabel = document.getElementById("arcDayLabel");
-  const arcBar = document.getElementById("arcBar");
-  if(!arcLabel || !arcDayLabel || !arcBar) return;
-
-  arcLabel.textContent = `Arc ${arc}`;
-  arcDayLabel.textContent = `Day ${arcDay} / ${ARC_LEN}`;
-  arcBar.style.width = `${Math.round((arcDay / ARC_LEN) * 100)}%`;
+  document.getElementById("arcLabel").textContent = `Arc ${arc}`;
+  document.getElementById("arcDayLabel").textContent = `Day ${arcDay} / ${ARC_LEN}`;
+  document.getElementById("arcBar").style.width = `${Math.round((arcDay / ARC_LEN) * 100)}%`;
 }
 window.startNewArc = function(){
-  state.startISO = isoDate(new Date());
+  state.startISO = todayISO();
   save(KEY_STATE, state);
   toast("New Arc started.");
   render();
 };
 
-/* ========= SYSTEM overlay + sound ========= */
+/* ===== Overlay + sound ===== */
 window.hideSystem = function(){
-  const ov = document.getElementById("systemOverlay");
-  if(ov) ov.classList.add("hidden");
+  document.getElementById("systemOverlay").classList.add("hidden");
 };
 function showSystem(title, text){
-  const ov = document.getElementById("systemOverlay");
-  const t = document.getElementById("systemTitle");
-  const s = document.getElementById("systemText");
-  if(t) t.textContent = title;
-  if(s) s.textContent = text;
-  if(ov) ov.classList.remove("hidden");
+  document.getElementById("systemTitle").textContent = title;
+  document.getElementById("systemText").textContent = text;
+  document.getElementById("systemOverlay").classList.remove("hidden");
   playRankUpSound();
 }
 function playRankUpSound(){
@@ -906,73 +1057,63 @@ function playRankUpSound(){
     const ctx = new AudioCtx();
     const o = ctx.createOscillator();
     const g = ctx.createGain();
-
     o.type = "sine";
     o.frequency.setValueAtTime(180, ctx.currentTime);
     o.frequency.exponentialRampToValueAtTime(420, ctx.currentTime + 0.12);
     o.frequency.exponentialRampToValueAtTime(240, ctx.currentTime + 0.30);
-
     g.gain.setValueAtTime(0.0001, ctx.currentTime);
     g.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + 0.03);
     g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.35);
-
     o.connect(g); g.connect(ctx.destination);
-    o.start();
-    o.stop(ctx.currentTime + 0.36);
+    o.start(); o.stop(ctx.currentTime + 0.36);
     o.onended = () => ctx.close();
   } catch(e){}
 }
 
-/* ========= Actions ========= */
+/* ===== Actions ===== */
 window.logWorkout = function(kind){
-  const beforeRank = getRankInfo(state.xp).current.name;
-
-  const today = isoDate(new Date());
-  if(hasTodayLog()) return toast("Already logged today. Undo if needed.");
+  const before = getRankInfo(state.xp).current.name;
+  const iso = todayISO();
+  if(state.logs.some(l => l.iso === iso)) return toast("Already logged today. Undo if needed.");
 
   const xpGain = XP[kind] ?? 0;
   const stats = readInputs();
-  state.logs.push({ iso: today, kind, xp: xpGain, ...stats });
+  state.logs.push({ iso, kind, xp: xpGain, ...stats });
   state.xp += xpGain;
 
-  const afterRank = getRankInfo(state.xp).current.name;
   save(KEY_STATE, state);
-
   toast(`Mission logged (+${xpGain} XP).`);
   render();
 
-  if(afterRank !== beforeRank){
-    showSystem("Rank Up", `You have awakened greater power.\nRank: ${beforeRank} → ${afterRank}`);
+  const after = getRankInfo(state.xp).current.name;
+  if(after !== before){
+    showSystem("Rank Up", `You have awakened greater power.\nRank: ${before} → ${after}`);
   }
 };
 
 window.saveStatsOnly = function(){
-  const today = isoDate(new Date());
+  const iso = todayISO();
   const stats = readInputs();
-  const ex = todayLog();
-
+  const ex = state.logs.find(l => l.iso === iso);
   if(ex){
     Object.assign(ex, stats);
     save(KEY_STATE, state);
     toast("Updated stats.");
     return render();
   }
-
-  state.logs.push({ iso: today, kind: "STATS ONLY", xp: 0, ...stats });
+  state.logs.push({ iso, kind: "STATS ONLY", xp: 0, ...stats });
   save(KEY_STATE, state);
   toast("Stats saved.");
   render();
 };
 
 window.undoToday = function(){
-  const today = isoDate(new Date());
-  const idx = state.logs.findIndex(l => l.iso === today);
+  const iso = todayISO();
+  const idx = state.logs.findIndex(l => l.iso === iso);
   if(idx === -1) return toast("Nothing logged today.");
-
   const removed = state.logs.splice(idx, 1)[0];
   state.xp -= (removed.xp || 0);
   if(state.xp < 0) state.xp = 0;
-
   save(KEY_STATE, state);
   toast("Undid today.");
   render();
@@ -983,14 +1124,14 @@ window.togglePanel = function(id){
 };
 
 window.resetAll = function(){
-  if(!confirm("Reset EVERYTHING? This clears logs + workouts + settings.")) return;
+  if(!confirm("Reset EVERYTHING? This clears logs + workouts + settings + checklist.")) return;
   localStorage.removeItem(KEY_STATE);
   localStorage.removeItem(KEY_WORK);
   localStorage.removeItem(KEY_SET);
   location.reload();
 };
 
-/* ========= Workout customization ========= */
+/* ===== Workouts ===== */
 function hydrateWorkoutEditor(){
   for(let i=0;i<7;i++){
     const ta = document.getElementById("w"+i);
@@ -998,11 +1139,7 @@ function hydrateWorkoutEditor(){
   }
 }
 window.saveWorkouts = function(){
-  const updated = [];
-  for(let i=0;i<7;i++){
-    updated.push((document.getElementById("w"+i).value || "").trim());
-  }
-  workouts = updated;
+  workouts = Array.from({length:7}, (_,i) => (document.getElementById("w"+i).value || "").trim());
   save(KEY_WORK, workouts);
   toast("Workouts saved.");
   render();
@@ -1015,25 +1152,21 @@ window.restoreWorkoutDefaults = function(){
   render();
 };
 
-/* ========= Settings ========= */
+/* ===== Settings ===== */
 function populateSettingsUI(){
-  if(UI.themeSelect){
-    UI.themeSelect.innerHTML = "";
-    Object.keys(THEMES).forEach(name => {
-      const opt = document.createElement("option");
-      opt.value = name;
-      opt.textContent = name;
-      UI.themeSelect.appendChild(opt);
-    });
-    UI.themeSelect.value = settings.themeName || "Shadow Default";
-  }
-  if(UI.difficultySelect){
-    UI.difficultySelect.value = settings.difficulty || "hard";
-  }
+  UI.themeSelect.innerHTML = "";
+  Object.keys(THEMES).forEach(name => {
+    const opt = document.createElement("option");
+    opt.value = name;
+    opt.textContent = name;
+    UI.themeSelect.appendChild(opt);
+  });
+  UI.themeSelect.value = settings.themeName || "Shadow Default";
+  UI.difficultySelect.value = settings.difficulty || "hard";
 }
 window.saveSettings = function(){
-  settings.themeName = UI.themeSelect?.value || "Shadow Default";
-  settings.difficulty = UI.difficultySelect?.value || "hard";
+  settings.themeName = UI.themeSelect.value || "Shadow Default";
+  settings.difficulty = UI.difficultySelect.value || "hard";
   save(KEY_SET, settings);
   applyTheme(settings.themeName);
   toast("Settings saved.");
@@ -1048,51 +1181,40 @@ function applyTheme(themeName){
   document.documentElement.style.setProperty("--bgC", t.bgC);
 }
 
-/* ========= Render ========= */
-function render(){
-  document.body.classList.remove("rank-S","rank-SS","rank-SSS");
+/* ===== Admin / Fix ===== */
+window.addMissedDay = function(){
+  const d = UI.fixDate?.value;
+  const kind = UI.fixType?.value;
+  const note = (UI.fixNote?.value || "").trim();
+  if(!d) return toast("Pick a date first.");
+  if(!kind) return toast("Pick a type first.");
+  if(daysBetween(d, todayISO()) < 0) return toast("That date is in the future.");
+  if(state.logs.some(l => l.iso === d)) return toast("That date already has a log.");
 
-  UI.dayNum.textContent = dayNumberToday();
+  const xpGain = XP[kind] ?? 0;
+  state.logs.push({ iso: d, kind, xp: xpGain, note });
+  state.logs.sort((a,b) => a.iso.localeCompare(b.iso));
+  state.xp += xpGain;
+  save(KEY_STATE, state);
+  toast(`Added ${d} (+${xpGain} XP).`);
+  render();
+};
 
-  const info = getRankInfo(state.xp);
-  UI.xp.textContent = state.xp;
-  UI.rank.textContent = info.current.name;
+window.recalcXPFromLogs = function(){
+  let total = 0;
+  for(const l of state.logs) total += (l.xp || 0);
+  state.xp = Math.max(0, total);
+  save(KEY_STATE, state);
+  toast("XP recalculated.");
+  render();
+};
 
-  UI.rank.classList.remove("rankGlow");
-  if(info.current.name === "S" || info.current.name === "SS" || info.current.name === "SSS"){
-    UI.rank.classList.add("rankGlow");
-    document.body.classList.add(`rank-${info.current.name}`);
-  }
-
-  if(info.next){
-    const remaining = Math.max(0, info.next.minXP - state.xp);
-    UI.nextRankLine.textContent = `Next: ${info.next.name} in ${remaining} XP`;
-  } else {
-    UI.nextRankLine.textContent = `MAX RANK: ${info.current.name}`;
-  }
-
-  UI.streak.textContent = computeStreak();
-
-  const t = todayLog();
-  UI.todayStatus.innerHTML = t
-    ? `<span class="ok">Logged today:</span> ${t.kind} (+${t.xp} XP)`
-    : `<span class="warn">Not logged today.</span> Even Ritual counts.`;
-
-  const restDays = countRestDays();
-  if(UI.restDaysPill) UI.restDaysPill.textContent = `Rest Days: ${restDays}`;
-
-  renderLog();
-  renderCharts();
-  setTodayWorkout();
-  setDailyQuote();
-  renderArc();
-  renderSkillTree();
-}
+/* ===== Log + Charts ===== */
+function pretty(iso){ const [y,m,d] = iso.split("-"); return `${m}/${d}/${y}`; }
 
 function renderLog(){
   UI.log.innerHTML = "";
   const items = [...state.logs].slice(-30).reverse();
-
   if(items.length === 0){
     const li = document.createElement("li");
     li.textContent = "No logs yet. Day 1 begins now.";
@@ -1110,7 +1232,11 @@ function renderLog(){
     if(it.row != null) stats.push(`R:${it.row}`);
     if(it.weight != null) stats.push(`W:${it.weight}`);
 
-    left.textContent = `${pretty(it.iso)} — ${it.kind} ${it.xp ? `(+${it.xp})` : ""} ${stats.length ? " • " + stats.join(" ") : ""}`;
+    const noteTxt = it.note ? ` • ${it.note}` : "";
+    left.textContent =
+      `${pretty(it.iso)} — ${it.kind} ${it.xp ? `(+${it.xp})` : ""}` +
+      `${stats.length ? " • " + stats.join(" ") : ""}` +
+      `${noteTxt}`;
 
     const tag = document.createElement("span");
     tag.className = "tag";
@@ -1121,12 +1247,7 @@ function renderLog(){
     UI.log.appendChild(li);
   }
 }
-function pretty(iso){
-  const [y,m,d] = iso.split("-");
-  return `${m}/${d}/${y}`;
-}
 
-/* ========= Charts ========= */
 function renderCharts(){
   const strengthPoints = state.logs
     .filter(l => (l.push != null) || (l.squat != null) || (l.row != null))
@@ -1138,8 +1259,8 @@ function renderCharts(){
     .slice(-30)
     .map(l => ({ x: l.iso, y: l.weight }));
 
-  drawLineChart(UI.strengthChart, strengthPoints, "Strength");
-  drawLineChart(UI.weightChart, weightPoints, "Weight (lb)");
+  drawLineChart(document.getElementById("strengthChart"), strengthPoints, "Strength");
+  drawLineChart(document.getElementById("weightChart"), weightPoints, "Weight (lb)");
 }
 
 function drawLineChart(canvas, points, label){
@@ -1201,17 +1322,50 @@ function drawLineChart(canvas, points, label){
   ctx.fillText(`max: ${maxY.toFixed(1)}`, 140, h-10);
 }
 
-/* ========= Storage ========= */
+/* ===== Render ===== */
+function render(){
+  document.body.classList.remove("rank-S","rank-SS","rank-SSS");
+
+  UI.dayNum.textContent = dayNumberToday();
+
+  const info = getRankInfo(state.xp);
+  UI.xp.textContent = state.xp;
+  UI.rank.textContent = info.current.name;
+
+  UI.rank.classList.remove("rankGlow");
+  if(info.current.name === "S" || info.current.name === "SS" || info.current.name === "SSS"){
+    UI.rank.classList.add("rankGlow");
+    document.body.classList.add(`rank-${info.current.name}`);
+  }
+
+  UI.nextRankLine.textContent = info.next
+    ? `Next: ${info.next.name} in ${Math.max(0, info.next.minXP - state.xp)} XP`
+    : `MAX RANK: ${info.current.name}`;
+
+  UI.streak.textContent = computeStreak();
+  UI.todayStatus.innerHTML = todayLog()
+    ? `<span class="ok">Logged today:</span> ${todayLog().kind} (+${todayLog().xp} XP)`
+    : `<span class="warn">Not logged today.</span> Even Ritual counts.`;
+
+  UI.restDaysPill.textContent = `Rest Days: ${countRestDays()}`;
+
+  renderLog();
+  renderCharts();
+  setTodayWorkout();
+  setDailyQuote();
+  renderArc();
+  renderSkillTree();
+}
+
+/* ===== Storage ===== */
 function load(key){
   const raw = localStorage.getItem(key);
   if(!raw) return null;
   try { return JSON.parse(raw); } catch(e){ return null; }
 }
-function save(key, val){
-  localStorage.setItem(key, JSON.stringify(val));
-}
+function save(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
 
-/* ========= Toast ========= */
+/* ===== Toast ===== */
 function toast(msg){
   UI.toast.textContent = msg;
   UI.toast.classList.add("show");
@@ -1219,7 +1373,7 @@ function toast(msg){
   window.__toastT = setTimeout(() => UI.toast.classList.remove("show"), 1400);
 }
 
-/* ========= Service worker ========= */
+/* ===== Service worker ===== */
 function registerSW(){
   if(!("serviceWorker" in navigator)) return;
   navigator.serviceWorker.register("./service-worker.js").catch(()=>{});
